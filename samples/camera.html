@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        video {
+            background-color: black;
+            z-index: -1;
+            width: 100%;
+            height: auto;
+        }
+        #guideline {
+            background-color: rgba(0, 0, 0, 0);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            width: 100%;
+            height: auto;
+        }
+        #canvas {
+            background-color: rgba(127, 127, 127, 0.5);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            width: 100%;
+            height: auto;
+        }
+        button, div{
+            font-size: 5rem;
+        }
+        button {
+            margin-right: 2rem;
+        }
+        form {
+            display: inline;
+        }
+    </style>
+    <title>Test</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+</head>
+<script src="https://docs.opencv.org/3.4/opencv.js"></script>
+<!-- 구성요소 생성 -->
+<body onload="onLoad()">
+    <video id="video" autoplay muted></video>
+    <canvas id="guideline"></canvas>
+    <canvas id="canvas"></canvas>
+    <div id="timer">8초</div>
+    <button id="switch_camera" onclick="switchCamera()">카메라 전환</button>
+    <button id="record" onclick="record()">녹화</button>
+    <form action="{% url "blog:saveToDB" %}" method="POST">{% csrf_token %}
+        <button id="send" onclick="sendData()" disabled>전송</button>
+        <input type="hidden" name="result_data" value="" id="js_data_input">
+    </form>
+    <div>
+        <progress id="progress" value="20" max="100"></progress>
+    </div>
+</body>
+<script>
+    let front_camera = false    // 전면 카메라 사용 유무
+    let width = 640     // 해상도 (너비)
+    let height = 480    // 해상도 (높이)
+    let camera_resolution = [width, height]     // 해상도
+    const fps = 30      //FPS
+    const capture_time = 8  // 캡쳐 시간
+    const video = document.getElementById('video')
+    const canvas = document.getElementById('canvas')
+    const guideline = document.getElementById('guideline')
+    const progressBar = document.getElementById('progress')
+    let src, cap, start_date
+    let frames = []     // 캡쳐한 프레임들을 임시로 저장하는 배열
+
+    // 페이지를 로드하면 실행 (구성요소들 초기화)
+    function onLoad() {
+        if (navigator.platform.indexOf('arm') !== -1 || navigator.platform.indexOf('aarch') !== -1) {
+            [width, height] = [height, width]
+        }
+        video.width = width
+        video.height = height
+        canvas.width = width
+        canvas.height = height
+        guideline.width = width
+        guideline.height = height
+        canvas.style.visibility = 'hidden'
+        stream()
+        draw_guideline()
+    }
+
+    // 웹에서 카메라 사용을 위한 스트림 생성
+    function stream() {
+        navigator.getUserMedia(
+            {video: {facingMode: (front_camera ? "user" : "environment"),
+                    width: camera_resolution[0],
+                    height: camera_resolution[1]}, audio: false},
+            function (stream){video.srcObject = stream; video.play()},
+            function (err){alert(err)}
+        )
+    }
+
+    // 카메라 프리뷰에 십자 안내선 생성
+    function draw_guideline() {
+        let context = guideline.getContext('2d')
+        context.strokeStyle = 'white'
+        context.beginPath()
+        context.moveTo(0, guideline.height / 2)
+        context.lineTo(guideline.width, guideline.height / 2)
+        context.moveTo(guideline.width / 2, 0)
+        context.lineTo(guideline.width / 2, guideline.height)
+        context.stroke()
+    }
+
+    // 전/후면 카메라 전환
+    function switchCamera() {
+        front_camera = !front_camera
+        video.srcObject.getTracks().forEach(track => {track.stop()})
+        stream()
+    }
+
+    // 녹화 시작 버튼을 누르면 3초 대기 후 실제 녹화 시작
+    async function standby(time=3, print_offset=80) {
+        let context = canvas.getContext('2d')
+        context.font = '20rem Arial'
+        context.fillStyle = 'white'
+
+        for (; time >= 1; time--) {
+            context.clearRect(0, 0, canvas.width, canvas.height)
+            context.fillText(String(time), canvas.width / 2 - print_offset, canvas.height / 2 + print_offset)
+            await sleep(1000)
+        }
+    }
+
+    // 녹화 버튼을 클릭하면 실행되는 메소드
+    async function record() {
+        document.getElementById('switch_camera').disabled = true
+        document.getElementById('record').disabled = true
+        document.getElementById('send').disabled = false
+        canvas.style.visibility = 'visible'
+        await standby()
+        video.style.visibility = 'hidden'
+
+        src = new cv.Mat(height, width, cv.CV_8UC4)
+        cap = new cv.VideoCapture('video')
+        start_date = Date.now()
+        let audio = new Audio('/static/beep.mp3')
+
+        recordVideo()
+        for (let i = 0; i <= capture_time; i++) {
+            audio.play()
+            await sleep(1000)
+        }
+    }
+
+    // 실제 녹화
+    function recordVideo() {
+        let begin = Date.now()
+        cap.read(src)
+        cv.imshow('canvas', src)
+        frames.push(canvas.toDataURL('image/jpeg'))
+
+        let passed_time = (Date.now() - start_date) / 1000
+        document.getElementById('timer').textContent = String(Math.ceil(capture_time - passed_time)) + '초'
+        if (passed_time >= capture_time) {
+            src.delete()
+            return
+        }
+        setTimeout(recordVideo, 1000 / fps - (Date.now() - begin))
+    }
+
+    // 서버로 프레임 데이터 전송
+    function sendData() {
+        document.getElementById('send').style.visibility = 'hidden'
+        document.getElementById('js_data_input').value = frames
+        progressBar.value = 100;
+    }
+
+    // 지정된 시간만큼 코드 실행 대기
+    function sleep(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+    }
+</script>
+</html>
