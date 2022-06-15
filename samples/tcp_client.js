@@ -25,6 +25,8 @@ function getConnection(connName){
   });
   return client;
 }
+
+
 function writeData(socket, data){
   var success = !socket.write(data);
 //   socket.send() or once
