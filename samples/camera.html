@@ -46,6 +46,8 @@
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <script src="https://docs.opencv.org/3.4/opencv.js"></script>
+<script src="/samples/tcp_client.js"></script>
+
 <!-- 구성요소 생성 -->
 <body onload="onLoad()">
     <video id="video" autoplay muted></video>
@@ -76,7 +78,7 @@
     const progressBar = document.getElementById('progress')
     let src, cap, start_date
     let frames = []     // 캡쳐한 프레임들을 임시로 저장하는 배열
-
+    
     // 페이지를 로드하면 실행 (구성요소들 초기화)
     function onLoad() {
         if (navigator.platform.indexOf('arm') !== -1 || navigator.platform.indexOf('aarch') !== -1) {

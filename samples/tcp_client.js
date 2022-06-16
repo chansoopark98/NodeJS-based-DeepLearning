@@ -1,3 +1,4 @@
+console.log('test')
 var net = require('net');
 function getConnection(connName){
   var client = net.connect({port: 7777, host:'localhost'}, function() {

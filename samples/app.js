@@ -3,7 +3,6 @@
 // tcp port = 6666
 
 // set tcp Client
-var tcpClient = require('net')
 
 /* 
 psudo code
@@ -22,6 +21,8 @@ let https = require('https');
 let fs = require('fs');
 let express = require('express');
 
+
+
 let options = {
     key: fs.readFileSync('./privkey.pem'),
     cert: fs.readFileSync('./cert.pem'),
@@ -30,6 +31,11 @@ let options = {
 };
 
 let app = express();
+// app.use(express.static('sampels'));
+// app.use('/js', express.static(__dirname + '/js'));
+app.use('/samples', express.static(__dirname));
+
+console.log(__dirname)
 let port = process.env.PORT || 5555;
 let server = https.createServer(options, app);
 
@@ -38,6 +44,7 @@ server.listen(port, function () {
 } );
 
 app.get("/", (req, res) => {
+  // var test = require('./tcp_client') >> 이렇게하면 외부 .js 파일 호출 가능
   res.sendFile(__dirname + "/camera.html");
 });
 
