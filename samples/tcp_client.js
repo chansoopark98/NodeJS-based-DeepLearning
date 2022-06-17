@@ -11,7 +11,7 @@ function getConnection(connName){
     this.on('data', function(data) {
       console.log(connName + " From Server: " + data.toString());
       rcv_data = data;
-      this.end();
+      // this.end();
     });
     this.on('end', function() {
       console.log(connName + ' Client disconnected');

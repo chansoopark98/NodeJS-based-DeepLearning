@@ -16,7 +16,7 @@ app.set('view engine', 'ejs'); // 렌더링 엔진 모드를 ejs로 설정
 app.set('views',  __dirname + '/views');    // ejs이 있는 폴더를 지정
 
 app.get('/', (req, res) => {
-    res.render(__dirname + "/test.ejs");    // index.ejs을 사용자에게 전달
+    res.render(__dirname + "/camera.ejs");    // index.ejs을 사용자에게 전달
     // res.sendFile(__dirname + "/camera.html");
 })
 
@@ -48,7 +48,8 @@ io.on('connection', (socket) => {   //연결이 들어오면 실행되는 이벤
         // io.emit('message', msg);
         
         moment.socket.write(msg);
-        console.log("tcp rcv data is ok : ", moment.getRcvData());
+        var returned_data = moment.getRcvData();
+        console.log("tcp rcv data is ok : ", returned_data);
     });
 });
 
