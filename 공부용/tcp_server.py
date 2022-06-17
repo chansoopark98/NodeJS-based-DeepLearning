@@ -33,11 +33,6 @@ client_socket, addr = server_socket.accept()
 print('Connected by', addr)
 
 
-
-
-
-
-
 # 무한루프를 돌면서 
 while True:
 
@@ -48,7 +43,7 @@ while True:
     # if not data:
     #     break
 
-
+    print(data)
     # 수신받은 문자열을 출력합니다.
     print('Received from', addr, data.decode())
 

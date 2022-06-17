@@ -67,6 +67,7 @@ function writeData(data){
 var time = 100
 module.exports.writeData=writeData;
 module.exports.getRcvData=getRcvData;
+module.exports.socket=socket;
 // for (; time >= 1; time--) {
 //     writeData(Dwarves, "More Axes");
 // }
