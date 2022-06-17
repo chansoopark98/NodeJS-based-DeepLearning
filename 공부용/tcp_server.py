@@ -34,6 +34,10 @@ print('Connected by', addr)
 
 
 
+
+
+
+
 # 무한루프를 돌면서 
 while True:
 
@@ -49,8 +53,8 @@ while True:
     print('Received from', addr, data.decode())
 
     # 받은 문자열을 다시 클라이언트로 전송해줍니다.(에코) 
-    client_socket.sendall(data)
-
+    # client_socket.sendall(data)
+    client_socket.send(data)
 
 # 소켓을 닫습니다.
 client_socket.close()

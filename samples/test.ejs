@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Socket.IO 예제</title>
+    <title>Test</title>
 </head>
 <body>
     <ul id="messages" type="none">
@@ -40,7 +40,7 @@
             // socket.emit으로 서버에 신호를 전달
 
             socket.emit('message', msginput.value);
-
+            console.log('live on');
             msginput.value = "";
         };
     </script>

@@ -1,3 +1,4 @@
+var moment = require("./tcp_client.js");
 var app = require('express')();
 let fs = require('fs');
 let options = {
@@ -18,8 +19,6 @@ app.get('/', (req, res) => {
     res.render(__dirname + "/test.ejs");    // index.ejs을 사용자에게 전달
     // res.sendFile(__dirname + "/camera.html");
 })
-
-
 
 io.on('connection', (socket) => {   //연결이 들어오면 실행되는 이벤트
     var clients = [];
@@ -42,11 +41,12 @@ io.on('connection', (socket) => {   //연결이 들어오면 실행되는 이벤
     // on 함수로 이벤트를 정의해 신호를 수신할 수 있다.
     socket.on('message', (msg) => {
         //msg에는 클라이언트에서 전송한 매개변수가 들어온다. 이러한 매개변수의 수에는 제한이 없다.
-        console.log('Message received: ' + msg);
-        console.log(clients[0]);
-
+        // console.log('Message received: ' + msg);
+           
+        moment.writeData(msg);
         // io.emit으로 연결된 모든 소켓들에 신호를 보낼 수 있다.
-        io.emit('message', msg);
+        // io.emit('message', msg);
+        console.log("tcp rcv data is ok : ", moment.getRcvData());
     });
 });
 
