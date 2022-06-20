@@ -1,4 +1,4 @@
-var moment = require("./tcp_client.js");
+// var moment = require("./tcp_client.js");
 var app = require('express')();
 let fs = require('fs');
 let options = {
@@ -16,7 +16,8 @@ app.set('view engine', 'ejs'); // 렌더링 엔진 모드를 ejs로 설정
 app.set('views',  __dirname + '/views');    // ejs이 있는 폴더를 지정
 
 app.get('/', (req, res) => {
-    res.render(__dirname + "/camera.ejs");    // index.ejs을 사용자에게 전달
+    // res.render(__dirname + "/camera.ejs");    // index.ejs을 사용자에게 전달
+    res.render(__dirname + "/web_socket_test.ejs");    // index.ejs을 사용자에게 전달
     // res.sendFile(__dirname + "/camera.html");
 })
 
@@ -28,12 +29,13 @@ io.on('connection', (socket) => {   //연결이 들어오면 실행되는 이벤
         clientInfo.uid = data.uid;
         clientInfo.id = socket.id;
         clients.push(clientInfo);
-        console.log(clientInfo)
+        // console.log(clientInfo)
     });
      
     // socket 변수에는 실행 시점에 연결한 상대와 연결된 소켓의 객체가 들어있다.
     console.log('html page is init');
     console.log(socket.id);
+    socket.id += ',';
 
     //socket.emit으로 현재 연결한 상대에게 신호를 보낼 수 있다.
     socket.emit('usercount', io.engine.clientsCount);
@@ -48,7 +50,8 @@ io.on('connection', (socket) => {   //연결이 들어오면 실행되는 이벤
         // io.emit('message', msg);
         
         
-        moment.socket.write(clients.id + msg);
+        console.log(socket.id);
+        moment.socket.write(socket.id + msg);
         var returned_data = moment.getRcvData();
         // console.log("tcp rcv data is ok : ", returned_data.split('')[0]);
     });

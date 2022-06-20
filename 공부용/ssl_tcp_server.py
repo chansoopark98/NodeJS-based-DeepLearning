@@ -1,13 +1,12 @@
-from audioop import mul
 import multiprocessing
 import socket
 import base64
 import cv2
-from PIL import Image
-import io
 import numpy as np
-from imageio import imread
 import logging
+
+import ssl
+
 
 connects = [1, 2]
 
@@ -61,20 +60,31 @@ class TCPServer(object):
     def __init__(self, hostname, port):
         self.hostname= hostname
         self.port = port
+        self.wrapping = True
+        print('server host name : ', socket.gethostname())
 
-    
     def start(self):
+        self.context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        self.context.load_cert_chain('../cert.pem', '../privkey.pem')
+
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind((self.hostname, self.port))
         self.server_socket.listen()
-
+        print("소켓 wrapping 중")
+        if self.wrapping:
+            self.server_socket = self.context.wrap_socket(self.server_socket,
+            server_side=True) # server_hostname='park-tdl.tspxr.ml
+        
         while True:
+            print("소켓 진입 중")
             conn, address = self.server_socket.accept()
+            print("소켓 진입 연결 완료")
             process = multiprocessing.Process(target=handle, args=(conn, address))
             process.daemon = True
             process.start()
 
 
 if __name__ == "__main__":
-    server = TCPServer(hostname='127.0.0.1', port=7777)
+    server = TCPServer(hostname='0.0.0.0', port=7777)
     server.start()

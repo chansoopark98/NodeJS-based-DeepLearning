@@ -1,8 +1,11 @@
 var net = require('net');
 let rcv_data;
+let hostname = '127.0.0.1';
+// let hostname = 'park-dev';
+
 
 function getConnection(connName){
-  var client = net.connect({port: 7777, host:'localhost'}, function() {
+  var client = net.connect({port: 7777, host:hostname}, function() {
     console.log(connName + ' Connected: ');
     console.log('   local = %s:%s', this.localAddress, this.localPort);
     console.log('   remote = %s:%s', this.remoteAddress, this.remotePort);
