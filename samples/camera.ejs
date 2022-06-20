@@ -57,16 +57,25 @@
     <button id="switch_camera" onclick="switchCamera()">카메라 전환</button>
     <button id="record" onclick="record()">녹화</button>
     
-    <button id="send" onclick="sendData()" disabled>전송</button>
+    <!-- <button id="send" onclick="sendData()" disabled>전송</button> -->
     <input type="hidden" name="result_data" value="" id="js_data_input">
     
-    <div>
+    <!-- <div>
         <progress id="progress" value="20" max="100"></progress>
-    </div>
+    </div> -->
 </body>
 <script>
-    
-    var socket = io();
+
+    var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
+
+    // TCP Server에서 보내준 데이터를 받았을 때 동작하는 콜백함수
+    // TODO
+    // webSocket.onmessage = function(message){
+    // console.log(message.data);
+    // };
+
+    var client_id = Math.random().toString(36).substr(2,11);
+    client_id += ',';
 
     // 카메라 세팅 부분
     let front_camera = false    // 전면 카메라 사용 유무
@@ -77,8 +86,6 @@
     const capture_time = 1000;  // 캡쳐 시간
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const guideline = document.getElementById('guideline');
-    const progressBar = document.getElementById('progress');
     let src, cap, start_date;
     let frames = []     // 캡쳐한 프레임들을 임시로 저장하는 배열
     
@@ -91,11 +98,8 @@
         video.height = height
         canvas.width = width
         canvas.height = height
-        guideline.width = width
-        guideline.height = height
         canvas.style.visibility = 'hidden'
         stream()
-        draw_guideline()
     }
 
     // 웹에서 카메라 사용을 위한 스트림 생성
@@ -107,18 +111,6 @@
             function (stream){video.srcObject = stream; video.play()},
             function (err){alert(err)}
         )
-    }
-
-    // 카메라 프리뷰에 십자 안내선 생성
-    function draw_guideline() {
-        let context = guideline.getContext('2d')
-        context.strokeStyle = 'white'
-        context.beginPath()
-        context.moveTo(0, guideline.height / 2)
-        context.lineTo(guideline.width, guideline.height / 2)
-        context.moveTo(guideline.width / 2, 0)
-        context.lineTo(guideline.width / 2, guideline.height)
-        context.stroke()
     }
 
     // 전/후면 카메라 전환
@@ -145,24 +137,16 @@
     async function record() {
         document.getElementById('switch_camera').disabled = true;
         document.getElementById('record').disabled = true;
-        document.getElementById('send').disabled = false;
+        
         canvas.style.visibility = 'visible';
-        // await standby()
         video.style.visibility = 'hidden';
 
         src = new cv.Mat(height, width, cv.CV_8UC4)
         cap = new cv.VideoCapture('video');
         start_date = Date.now()
-        let audio = new Audio('/static/beep.mp3')
         
+        console.log('record');
         recordVideo();
-        
-
-        for (let i = 0; i <= capture_time; i++) {
-            audio.play()
-            socket.emit('message', canvas.toDataURL('image/jpeg'));
-            await sleep(1000)
-        }
     }
 
     // 실제 녹화
@@ -171,7 +155,7 @@
         cap.read(src);
         cv.imshow('canvas', src);
         // frames.push(canvas.toDataURL('image/jpeg'));
-        
+        webSocket.send(client_id + canvas.toDataURL('image/jpeg'));
         // socket.emit('message', 'test123123');
 
         let passed_time = (Date.now() - start_date) / 1000
@@ -181,18 +165,6 @@
             return
         }
         setTimeout(recordVideo, 1000 / fps - (Date.now() - begin))
-    }
-
-    // 서버로 프레임 데이터 전송
-    function sendData() {
-        document.getElementById('send').style.visibility = 'hidden'
-        document.getElementById('js_data_input').value = frames
-        progressBar.value = 100;
-    }
-
-    // 지정된 시간만큼 코드 실행 대기
-    function sleep(ms) {
-        return new Promise((r) => setTimeout(r, ms));
     }
 </script>
 </html>
