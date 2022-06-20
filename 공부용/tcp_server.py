@@ -1,4 +1,10 @@
 import socket
+import base64
+import cv2
+from PIL import Image
+import io
+import numpy as np
+from imageio import imread
 
 
 # 접속할 서버 주소입니다. 여기에서는 루프백(loopback) 인터페이스 주소 즉 localhost를 사용합니다. 
@@ -37,19 +43,30 @@ print('Connected by', addr)
 while True:
 
     # 클라이언트가 보낸 메시지를 수신하기 위해 대기합니다. 
-    data = client_socket.recv(1024)
+    data = client_socket.recv(100000)
 
-    # 빈 문자열을 수신하면 루프를 중지합니다. 
-    # if not data:
-    #     break
-
-    print(data)
-    # 수신받은 문자열을 출력합니다.
-    print('Received from', addr, data.decode())
+    data = data.split(b',')[1]
+    
+    print('len', len(data))
+    if len(data) % 4:
+        # 4의 배수가 아니면 패딩
+        data += bytes('=') * (4 - len(data) % 4) 
+        
+    imgdata = base64.b64decode(data)
+    image = Image.open(io.BytesIO(imgdata))
+    image = np.array(image)
+    # image = Image.open(imgdata)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    cv2.imshow('windows', image)
+    cv2.waitKey(100)
 
     # 받은 문자열을 다시 클라이언트로 전송해줍니다.(에코) 
     # client_socket.sendall(data)
-    client_socket.send(data)
+
+
+    # encoding
+    encode_image = base64.b64encode(image)
+    client_socket.send(encode_image)
 
 # 소켓을 닫습니다.
 client_socket.close()

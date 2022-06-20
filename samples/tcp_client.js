@@ -9,7 +9,7 @@ function getConnection(connName){
     // this.setTimeout(1000);
     this.setEncoding('utf8');
     this.on('data', function(data) {
-      console.log(connName + " From Server: " + data.toString());
+      // console.log(connName + " From Server: " + data.toString());
       rcv_data = data;
       // this.end();
     });
@@ -31,6 +31,7 @@ function getConnection(connName){
 
 
 function getRcvData(){
+  console.log('get data');
   return rcv_data;
 }
 
@@ -50,7 +51,7 @@ var socket = getConnection("test client");
 // }
 
 function writeData(data){
-  console.log('write_Data', data);
+  // console.log('write_Data', data);
   var success = !socket.write(data);
   console.log(success);
 //   socket.send() or once

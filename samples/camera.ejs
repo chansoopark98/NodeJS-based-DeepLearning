@@ -53,7 +53,7 @@
     <video id="video" autoplay muted></video>
     <canvas id="guideline"></canvas>
     <canvas id="canvas"></canvas>
-    <div id="timer">8초</div>
+    <div id="timer">시작 버튼을 눌러주세요</div>
     <button id="switch_camera" onclick="switchCamera()">카메라 전환</button>
     <button id="record" onclick="record()">녹화</button>
     
@@ -70,16 +70,16 @@
 
     // 카메라 세팅 부분
     let front_camera = false    // 전면 카메라 사용 유무
-    let width = 640     // 해상도 (너비)
-    let height = 480    // 해상도 (높이)
-    let camera_resolution = [width, height]     // 해상도
-    const fps = 30      //FPS
-    const capture_time = 8  // 캡쳐 시간
-    const video = document.getElementById('video')
-    const canvas = document.getElementById('canvas')
-    const guideline = document.getElementById('guideline')
-    const progressBar = document.getElementById('progress')
-    let src, cap, start_date
+    let width = 640;     // 해상도 (너비)
+    let height = 480;    // 해상도 (높이)
+    let camera_resolution = [width, height];     // 해상도
+    const fps = 30;      //FPS
+    const capture_time = 1000;  // 캡쳐 시간
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const guideline = document.getElementById('guideline');
+    const progressBar = document.getElementById('progress');
+    let src, cap, start_date;
     let frames = []     // 캡쳐한 프레임들을 임시로 저장하는 배열
     
     // 페이지를 로드하면 실행 (구성요소들 초기화)
@@ -143,15 +143,15 @@
 
     // 녹화 버튼을 클릭하면 실행되는 메소드
     async function record() {
-        document.getElementById('switch_camera').disabled = true
-        document.getElementById('record').disabled = true
-        document.getElementById('send').disabled = false
-        canvas.style.visibility = 'visible'
-        await standby()
-        video.style.visibility = 'hidden'
+        document.getElementById('switch_camera').disabled = true;
+        document.getElementById('record').disabled = true;
+        document.getElementById('send').disabled = false;
+        canvas.style.visibility = 'visible';
+        // await standby()
+        video.style.visibility = 'hidden';
 
         src = new cv.Mat(height, width, cv.CV_8UC4)
-        cap = new cv.VideoCapture('video')
+        cap = new cv.VideoCapture('video');
         start_date = Date.now()
         let audio = new Audio('/static/beep.mp3')
         
@@ -167,12 +167,12 @@
 
     // 실제 녹화
     function recordVideo() {
-        let begin = Date.now()
-        cap.read(src)
-        cv.imshow('canvas', src)
-        frames.push(canvas.toDataURL('image/jpeg'))
-
-
+        let begin = Date.now();
+        cap.read(src);
+        cv.imshow('canvas', src);
+        // frames.push(canvas.toDataURL('image/jpeg'));
+        
+        // socket.emit('message', 'test123123');
 
         let passed_time = (Date.now() - start_date) / 1000
         document.getElementById('timer').textContent = String(Math.ceil(capture_time - passed_time)) + '초'

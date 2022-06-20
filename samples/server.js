@@ -33,7 +33,7 @@ io.on('connection', (socket) => {   //연결이 들어오면 실행되는 이벤
      
     // socket 변수에는 실행 시점에 연결한 상대와 연결된 소켓의 객체가 들어있다.
     console.log('html page is init');
-    console.log(clients[0]);
+    console.log(socket.id);
 
     //socket.emit으로 현재 연결한 상대에게 신호를 보낼 수 있다.
     socket.emit('usercount', io.engine.clientsCount);
@@ -47,9 +47,10 @@ io.on('connection', (socket) => {   //연결이 들어오면 실행되는 이벤
         // io.emit으로 연결된 모든 소켓들에 신호를 보낼 수 있다.
         // io.emit('message', msg);
         
-        moment.socket.write(msg);
+        
+        moment.socket.write(clients.id + msg);
         var returned_data = moment.getRcvData();
-        console.log("tcp rcv data is ok : ", returned_data);
+        // console.log("tcp rcv data is ok : ", returned_data.split('')[0]);
     });
 });
 
