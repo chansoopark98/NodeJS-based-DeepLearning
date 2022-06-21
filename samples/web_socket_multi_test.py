@@ -36,10 +36,10 @@ class TCPServer(SemanticModel):
         output = np.expand_dims(output, axis=-1)
         output = output.astype(np.uint8)*127
 
-        output = np.concatenate([output, output, output], axis=-1)
+        # output = np.concatenate([output, output, output], axis=-1)
 
-        cv2.imshow(str(client_id), output)
-        cv2.waitKey(1)
+        # cv2.imshow(str(client_id), output)
+        # cv2.waitKey(1)
         
         encode_image = cv2.imencode('.jpeg', output)
         encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
