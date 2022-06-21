@@ -19,6 +19,7 @@ class TCPServer(SemanticModel):
     def rcv_data(self, data):
         data = data[0].split(',')
         client_id = data[0]
+        data_type = data[1]
         base64_data = data[2]
 
         if len(base64_data) % 4:
@@ -31,11 +32,22 @@ class TCPServer(SemanticModel):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         predict = self.model_predict(image=image)
-        predict = predict[0]
-        cv2.imshow(str(client_id), predict.astype(np.uint8)*255)
+        output = predict[0]
+        output = np.expand_dims(output, axis=-1)
+        output = output.astype(np.uint8)*127
+
+        output = np.concatenate([output, output, output], axis=-1)
+
+        cv2.imshow(str(client_id), output)
         cv2.waitKey(1)
 
-        encode_image = base64.b64encode(image)
+        
+        encode_image = cv2.imencode('.jpeg', output)
+        encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
+        encode_image = 'data:image/jpeg;base64' + ',' + encode_image
+        
+        
+        
         return client_id, encode_image
 
     async def loop_logic(self, websocket, path):
@@ -60,7 +72,8 @@ class TCPServer(SemanticModel):
                                              port=self.port, ssl=self.ssl_context,
                                              max_size=100000,
                                              max_queue=4,
-                                             read_limit=2**16)
+                                             read_limit=2**20,
+                                             write_limit=2**20)
         asyncio.get_event_loop().run_until_complete(self.start_server)
         asyncio.get_event_loop().run_forever()
         

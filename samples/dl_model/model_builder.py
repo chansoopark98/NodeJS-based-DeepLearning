@@ -98,7 +98,7 @@ class SemanticModel():
             method=tf.image.ResizeMethod.BILINEAR)
         
         image = tf.cast(image, tf.float32)
-        image = preprocess_input(image, mode='torch')
+        image /= 255.
         
         return self.model.predict(image)
         
