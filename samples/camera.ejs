@@ -32,6 +32,13 @@
             width: 100%;
             height: auto;
         }
+        #draw_canvas {
+            background-color: rgba(127, 127, 127, 0.5);
+            top: 0;
+            left: 0;
+            z-index: 2;
+            height: auto;
+        }
         button, div{
             font-size: 5rem;
         }
@@ -46,7 +53,7 @@
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 <script async src="https://docs.opencv.org/3.4/opencv.js"></script>
-<script src="/socket.io/socket.io.js"></script>
+<!-- <script src="/socket.io/socket.io.js"></script> -->
 
 <!-- 구성요소 생성 -->
 <body onload="onLoad()">
@@ -90,10 +97,11 @@
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
 
-    let draw_canvas = document.getElementById('draw_canvas');
+    const draw_canvas = document.getElementById('draw_canvas');
 
     let draw_context = draw_canvas.getContext('2d');
-    var image = new Image(224, 224);
+    var draw_dummy_image = new Image(224, 224);
+    let image_src;
     
 
     let src, cap, start_date;
@@ -103,17 +111,20 @@
     webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
       if (webSocket.readyState === webSocket.OPEN) {
         webSocket.send(client_id + canvas.toDataURL('image/jpeg'));
+
       }
     }, 100);
 
 
     webSocket.onmessage = function(message){
         
-        image.src = message.data;
-        console.log(image.src);
+        
+        image_src = message.data;
+        
+
+        // console.log(image.src);
         // draw_canvas.setAttribute('src',message.data);
-        draw_context.drawImage(image, 0, 0);
-    
+        
     };
 
     
@@ -173,6 +184,7 @@
         document.getElementById('record').disabled = true;
         
         canvas.style.visibility = 'visible';
+        draw_canvas.style.visibility = 'visible';
         video.style.visibility = 'hidden';
 
         src = new cv.Mat(height, width, cv.CV_8UC4)
@@ -186,6 +198,8 @@
 
     // 실제 녹화
     async function recordVideo() {
+        draw_dummy_image.src = image_src;
+        draw_context.drawImage(draw_dummy_image, 0, 0);
         let begin = Date.now();
         await cap.read(src);
         await cv.imshow('canvas', src);

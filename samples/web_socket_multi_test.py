@@ -40,7 +40,6 @@ class TCPServer(SemanticModel):
 
         cv2.imshow(str(client_id), output)
         cv2.waitKey(1)
-
         
         encode_image = cv2.imencode('.jpeg', output)
         encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
@@ -52,7 +51,6 @@ class TCPServer(SemanticModel):
 
     async def loop_logic(self, websocket, path):
         while True:
-
             try:
                 # Wait data from client
                 data = await asyncio.gather(websocket.recv())
@@ -61,8 +59,10 @@ class TCPServer(SemanticModel):
                 await websocket.send(rcv_data)
 
             except Exception as e:
-                print('websocket client is disconnected!!  :', e)
+                print('Log : {0}'.format(e))
                 cv2.destroyWindow(str(client_id))
+                break
+                # websocket.close()
 
     
     def run_server(self):
@@ -70,7 +70,7 @@ class TCPServer(SemanticModel):
         self.ssl_context.load_cert_chain(self.cert_dir, self.key_dir)
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
-                                             max_size=100000,
+                                             max_size=120000,
                                              max_queue=4,
                                              read_limit=2**20,
                                              write_limit=2**20)
