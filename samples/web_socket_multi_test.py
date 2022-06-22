@@ -38,8 +38,8 @@ class TCPServer(SemanticModel):
 
         # output = np.concatenate([output, output, output], axis=-1)
 
-        # cv2.imshow(str(client_id), output)
-        # cv2.waitKey(1)
+        cv2.imshow(str(client_id), output)
+        cv2.waitKey(1)
         
         encode_image = cv2.imencode('.jpeg', output)
         encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
@@ -55,7 +55,7 @@ class TCPServer(SemanticModel):
                 # Wait data from client
                 data = await asyncio.gather(websocket.recv())
                 client_id, rcv_data = self.rcv_data(data=data)
-
+                print(client_id)
                 await websocket.send(rcv_data)
 
             except Exception as e:
@@ -70,8 +70,8 @@ class TCPServer(SemanticModel):
         self.ssl_context.load_cert_chain(self.cert_dir, self.key_dir)
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
-                                             max_size=120000,
-                                             max_queue=4,
+                                             max_size=100000,
+                                             max_queue=128,
                                              read_limit=2**20,
                                              write_limit=2**20)
         asyncio.get_event_loop().run_until_complete(self.start_server)

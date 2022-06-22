@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        #canvas {
+            background-color: rgba(127, 127, 127, 0.5);
+            position: relative;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            width: 100%;
+            height: auto;
+        }
+        button, div{
+            font-size: 5rem;
+        }
+        button {
+            margin-right: 2rem;
+        }
+        form {
+            display: inline;
+        }
+    </style>
+    <title>Test</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+</head>
+
+<body>
+    
+    <!-- <canvas id="guideline"></canvas> -->
+    <canvas id="canvas"></canvas>
+    <!-- <canvas id="draw_canvas"></canvas> -->
+    <button id="getData" onclick="getImgData()">Start</button>
+    <button id="sendData" onclick="drawImg()">Prediction</button>
+    
+</body>
+
+<script>
+    // data:image/jpeg;base64,
+
+    var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
+    var client_id = '1,';
+    
+
+    var reciveFlag = true; // 초기 서버에서 이미지를 수신받을 때 사용, 수신 이후 false로 전환
+
+    let encode_img_list = [];
+
+    // 카메라 세팅 부분
+    let width = 480;     // 해상도 (너비)
+    let height = 640;    // 해상도 (높이)
+
+    const canvas = document.getElementById('canvas');
+    canvas.style.visibility = 'visible';
+    canvas.width = width;
+    canvas.height = height;
+    
+    let image_window = new Image();
+    
+
+    webSocket.onmessage = function(message){
+        rcv_msg = message.data; 
+        
+        split_msg = rcv_msg.split('!');
+        console.log(split_msg);
+
+        if (split_msg[0] == '1'){
+            for (var i = 1; i < 11; i++){
+                encode_img_list.push(split_msg[i]);
+            }
+        
+            console.log(encode_img_list)
+        }
+
+        else {
+            console.log('else')
+        }
+            
+    };
+
+    function getRandomInt(min, max) {
+        //최댓값은 제외, 최솟값은 포함
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min)) + min; 
+    }
+    
+    function drawImg(){
+        var context = canvas.getContext('2d');
+        random_int = getRandomInt(0, 10);
+        console.log('draw_img', random_int);
+        
+        image_window.src = encode_img_list[random_int];
+        context.drawImage(image_window, 0, 0);
+    }
+
+
+    function getImgData(){
+        if (webSocket.readyState === webSocket.OPEN) {
+        // webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
+            console.log(client_id)
+            webSocket.send(client_id + 'dummy_data');
+        }
+
+    }
+
+
+</script>
+</html>

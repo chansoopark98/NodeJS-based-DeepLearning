@@ -52,18 +52,25 @@
     <title>Test</title>
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
+<script async src="https://docs.opencv.org/3.4/opencv.js"></script>
+<!-- <script src="/socket.io/socket.io.js"></script> -->
 
+<!-- 구성요소 생성 -->
 <body onload="onLoad()">
     <video id="video" autoplay muted></video>
     <canvas id="guideline"></canvas>
     <canvas id="canvas"></canvas>
+    <div id="timer">시작 버튼을 눌러주세요</div>
     <canvas id="draw_canvas"></canvas>
     <button id="switch_camera" onclick="switchCamera()">카메라 전환</button>
+    <button id="record" onclick="record()">녹화</button>
+    
+    <!-- <button id="send" onclick="sendData()" disabled>전송</button> -->
     <input type="hidden" name="result_data" value="" id="js_data_input">
 </body>
-
 <script>
     var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
+    
     var client_id = Math.random().toString(36).substr(2,11);
     client_id += ',';
 
@@ -74,20 +81,25 @@
     let camera_resolution = [width, height];     // 해상도
     const fps = 30;      //FPS
     const capture_time = 1000;  // 캡쳐 시간
+    const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
+
     const draw_canvas = document.getElementById('draw_canvas');
-    let context = canvas.getContext('2d')
+
     let draw_context = draw_canvas.getContext('2d');
     var draw_dummy_image = new Image(224, 224);
     let image_src;
-    const videoElement = document.querySelector('video');
-    videoElement.addEventListener('canplaythrough', render_video);
+    
+
+    let src, cap, start_date;
+    let frames = []     // 캡쳐한 프레임들을 임시로 저장하는 배열
+
 
     webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
       if (webSocket.readyState === webSocket.OPEN) {
-        webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
+        webSocket.send(client_id + canvas.toDataURL('image/jpeg'));
       }
-    }, 100);
+    }, 50);
 
     webSocket.onmessage = function(message){
         image_src = message.data; 
@@ -99,16 +111,15 @@
         if (navigator.platform.indexOf('arm') !== -1 || navigator.platform.indexOf('aarch') !== -1) {
             [width, height] = [height, width]
         }
-        video.width = width;
-        video.height = height;
-        canvas.width = width;
-        canvas.height = height;
-        canvas.style.visibility = 'visible';
+        video.width = width
+        video.height = height
+        canvas.width = width
+        canvas.height = height
+        canvas.style.visibility = 'hidden'
         draw_canvas.style.visibility = 'visible'; //hidden
         draw_canvas.width = 224;
         draw_canvas.height = 224;
         stream();
-        video.style.visibility = 'hidden';
     }
 
     // 웹에서 카메라 사용을 위한 스트림 생성
@@ -122,16 +133,62 @@
         )
     }
 
+    // 전/후면 카메라 전환
     function switchCamera() {
         front_camera = !front_camera
         video.srcObject.getTracks().forEach(track => {track.stop()})
         stream()
     }
 
-    async function render_video(){
-         context.drawImage(videoElement, 0, 0);
-         await requestAnimationFrame(render_video)
+    // 녹화 시작 버튼을 누르면 3초 대기 후 실제 녹화 시작
+    async function standby(time=3, print_offset=80) {
+        let context = canvas.getContext('2d')
+        context.font = '20rem Arial'
+        context.fillStyle = 'white'
+
+        for (; time >= 1; time--) {
+            context.clearRect(0, 0, canvas.width, canvas.height)
+            context.fillText(String(time), canvas.width / 2 - print_offset, canvas.height / 2 + print_offset)
+            await sleep(1000)
+        }
     }
 
+    // 녹화 버튼을 클릭하면 실행되는 메소드
+    function record() {
+        document.getElementById('switch_camera').disabled = true;
+        document.getElementById('record').disabled = true;
+        
+        canvas.style.visibility = 'visible';
+        draw_canvas.style.visibility = 'visible';
+        video.style.visibility = 'hidden';
+
+        src = new cv.Mat(height, width, cv.CV_8UC4)
+        cap = new cv.VideoCapture('video');
+        start_date = Date.now()
+        
+        console.log('record');
+        recordVideo();
+        
+    }
+
+    // 실제 녹화
+    async function recordVideo() {
+        draw_dummy_image.src = image_src;
+        draw_context.drawImage(draw_dummy_image, 0, 0);
+        let begin = Date.now();
+        await cap.read(src);
+        await cv.imshow('canvas', src);
+        // frames.push(canvas.toDataURL('image/jpeg'));
+        // webSocket.send(client_id + canvas.toDataURL('image/jpeg'));
+        // socket.emit('message', 'test123123');
+
+        let passed_time = (Date.now() - start_date) / 1000
+        document.getElementById('timer').textContent = String(Math.ceil(capture_time - passed_time)) + '초'
+        if (passed_time >= capture_time) {
+            src.delete()
+            return
+        }
+        setTimeout(recordVideo, 1000 / fps - (Date.now() - begin))
+    }
 </script>
 </html>

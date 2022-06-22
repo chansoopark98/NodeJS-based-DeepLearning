@@ -62,7 +62,7 @@ def semantic_model(image_size, model='MobileNetV3S'):
 
 class SemanticModel():
     def __init__(self):
-        self.image_size = (224, 224)
+        self.image_size = (320, 180)
         self.weights = './dl_model/test_weight.h5'
         self.load_model()
         self.warm_up()
