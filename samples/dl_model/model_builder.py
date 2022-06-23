@@ -63,25 +63,28 @@ def semantic_model(image_size, model='MobileNetV3S'):
 class SemanticModel():
     def __init__(self):
         self.image_size = (320, 180)
-        self.weights = './dl_model/test_weight.h5'
+        self.weights = './dl_model/test_weights.h5'
         self.load_model()
         self.warm_up()
     
     def load_model(self):
-        base = MobileNetV3_Small(shape=(self.image_size[0], self.image_size[1], 3), n_class=1000, alpha=1, include_top=False).build()
-        
-        c5 = base.get_layer('add_5').output  # 16x32 256 or get_layer('post_swish') => 확장된 채널 1280
-        c2 = base.get_layer('add').output  # 128x256 48
+
+        base = EfficientNetV2S(input_shape=(
+                self.image_size[0], self.image_size[1], 3), pretrained="imagenet")
+        c5 = base.get_layer('add_34').output
+        c2 = base.get_layer('add_4').output
 
         features = [c2, c5]
 
         model_input = base.input
         model_output = deepLabV3Plus(features=features, activation='swish')
 
-        semantic_output = classifier(model_output, num_classes=2, upper=4, name='output')
-        semantic_output = tf.argmax(semantic_output, axis=-1)
+        semantic_output = classifier(
+            model_output, num_classes=2, upper=4, name='output')
+
         self.model = models.Model(inputs=[model_input], outputs=[semantic_output])
-        return self.model
+        
+
 
     def warm_up(self):
         self.model.load_weights(self.weights, by_name=True)
@@ -98,9 +101,11 @@ class SemanticModel():
             method=tf.image.ResizeMethod.BILINEAR)
         
         image = tf.cast(image, tf.float32)
-        image /= 255.
-        
-        return self.model.predict(image)
+        image = preprocess_input(image, mode='torch')
+        output = self.model.predict(image)
+
+        output = tf.argmax(output, axis=-1)
+        return output
         
     
         

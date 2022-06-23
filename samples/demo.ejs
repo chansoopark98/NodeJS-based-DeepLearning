@@ -11,11 +11,24 @@
         #canvas {
             background-color: rgba(127, 127, 127, 0.5);
             position: relative;
-            top: 0;
-            left: 0;
-            z-index: 2;
+            /* top: 0; */
+            /* left: 0; */
+            /* z-index: 2; */
+            margin: 0px;
+            display: block;
             width: 100%;
-            height: auto;
+            height: 100;
+        }
+        #draw_canvas {
+            background-color: rgba(127, 127, 127, 0.5);
+            position: relative;
+            /* top: 0; */
+            /* left: 0; */
+            /* z-index: 2; */
+            margin: 0px;
+            display: block;
+            width: 100%;
+            height: 100%;
         }
         button, div{
             font-size: 5rem;
@@ -33,11 +46,21 @@
 
 <body>
     
+
     <!-- <canvas id="guideline"></canvas> -->
-    <canvas id="canvas"></canvas>
+    <div style="float:left;">
+        <canvas id="canvas"></canvas>
+    </div>
+    <div style="float:right;">
+        <canvas id="draw_canvas"></canvas>
+    </div>
+    <div>
+        <button id="getData" onclick="getImgData()">Image reset</button>
+        <button id="nextImage" onclick="drawImg()">Next image</button>
+    </div>
+    <button id="initStart" onclick="buttonStart()">Start</button>
     <!-- <canvas id="draw_canvas"></canvas> -->
-    <button id="getData" onclick="getImgData()">Start</button>
-    <button id="sendData" onclick="drawImg()">Prediction</button>
+    
     
 </body>
 
@@ -56,19 +79,40 @@
     let width = 480;     // 해상도 (너비)
     let height = 640;    // 해상도 (높이)
 
-    const canvas = document.getElementById('canvas');
-    canvas.style.visibility = 'visible';
+    var canvas = document.getElementById('canvas');
+    var draw_canvas = document.getElementById('draw_canvas');
+    var getDataButton = document.getElementById('getData');
+    var nextImageButton = document.getElementById('nextImage');
+    var startButton = document.getElementById('initStart');
+    getDataButton.style.visibility = 'hidden';
+    nextImageButton.style.visibility = 'hidden';
+    canvas.style.visibility = 'hidden';
     canvas.width = width;
     canvas.height = height;
+    draw_canvas.style.visibility = 'hidden';
+    draw_canvas.width = 480;
+    draw_canvas.height = 640;
+    var context = canvas.getContext('2d');
+    var draw_context = draw_canvas.getContext('2d');
+    var draw_image_window = new Image(180, 320);
+    var image_window = new Image();
     
-    let image_window = new Image();
+    
+    
+    var imgIdx = 0;
+    // var image_src = 0;
+    
+      
+
+    var rcv_flag = false;
     
 
     webSocket.onmessage = function(message){
+        console.log('rcv data');
         rcv_msg = message.data; 
         
         split_msg = rcv_msg.split('!');
-        console.log(split_msg);
+        
 
         if (split_msg[0] == '1'){
             for (var i = 1; i < 11; i++){
@@ -76,38 +120,94 @@
             }
         
             console.log(encode_img_list)
+            client_id = '2,';
         }
 
         else {
             console.log('else')
-        }
-            
-    };
+            draw_image_window.src = message.data;
+            rcv_flag = true;
 
-    function getRandomInt(min, max) {
-        //최댓값은 제외, 최솟값은 포함
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min)) + min; 
+            }
+                
+    };
+    
+    webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
+      if (webSocket.readyState === webSocket.OPEN) {
+        if (client_id == '2,'){
+        webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
+        }
+      }
+    }, 1000);
+
+
+    function sleep(ms) {
+        const wakeUpTime = Date.now() + ms;
+        while (Date.now() < wakeUpTime) {}
     }
+
+    // function getPrediction(){
+    //     console.log('getPrediction');
+
+    //     // draw_image_window.src = image_src;
+    //     draw_image_window.onload = function() {
+    //         draw_context.drawImage(draw_image_window, 0, 0);
+    //     }
+        
+    // }
+
     
     function drawImg(){
-        var context = canvas.getContext('2d');
-        random_int = getRandomInt(0, 10);
-        console.log('draw_img', random_int);
         
-        image_window.src = encode_img_list[random_int];
-        context.drawImage(image_window, 0, 0);
+        // random_int = getRandomInt(0, 10);
+        console.log('draw_img', imgIdx);
+        
+        image_window.src = encode_img_list[imgIdx];
+        
+
+        // send to tcp server
+        if (client_id == '2,'){
+            webSocket.send(client_id + canvas.toDataURL('image/jpeg', 0.3));
+        }
+        
+        // index initailize
+        if (imgIdx == 9){
+            imgIdx = 0;
+            }
+        else {
+            imgIdx = imgIdx + 1;
+        }
+        
+        draw_image_window.onload = function() {
+            draw_context.drawImage(draw_image_window, 0, 0);
+        }
+        
+        image_window.onload = function() {
+            context.drawImage(image_window, 0, 0);
+        };
+        
+        
     }
 
-
     function getImgData(){
+        console.log('getImgData');
         if (webSocket.readyState === webSocket.OPEN) {
         // webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
+            client_id = '1,';
             console.log(client_id)
             webSocket.send(client_id + 'dummy_data');
         }
 
+    }
+
+    function buttonStart(){
+        startButton.style.visibility = 'hidden';
+        canvas.style.visibility = 'visible';
+        draw_canvas.style.visibility = 'visible';
+        getDataButton.style.visibility = 'visible';
+        nextImageButton.style.visibility = 'visible';
+        getImgData();
+        drawImg();
     }
 
 

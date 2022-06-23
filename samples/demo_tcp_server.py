@@ -6,7 +6,7 @@ import numpy as np
 import base64
 from threading import Thread
 from dl_model.model_builder import SemanticModel
-from demo_files.prepare_demo_imgs import load_imgs
+from demo_files.prepare_demo_imgs import load_imgs, load_logo_img
 import random
 
 class DemoTCPServer(SemanticModel):
@@ -17,10 +17,12 @@ class DemoTCPServer(SemanticModel):
         self.cert_dir = cert_dir
         self.key_dir = key_dir
         self.prepare_imgs()
+        self.logo_img = load_logo_img(img_path='./demo_files/')
+        
     
     def prepare_imgs(self):
         self.img_list = load_imgs(img_path='./demo_files/demo_imgs/')
-
+        
 
     def rcv_data(self, data):
         data = data[0].split(',')
@@ -42,23 +44,36 @@ class DemoTCPServer(SemanticModel):
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             predict = self.model_predict(image=image)
+            print(predict.shape)
             output = predict[0]
             output = np.expand_dims(output, axis=-1)
-            output = output.astype(np.uint8)*127
+
+            
+            output = cv2.resize(output, (480, 640), interpolation=cv2.INTER_NEAREST)
+            output = np.expand_dims(output, axis=-1)
+            output = np.concatenate([output, output, output], axis=-1)
+            
+            # output = output.astype(np.uint8)*127
 
             # output = np.concatenate([output, output, output], axis=-1)
-
-            cv2.imshow(str(client_id), output)
-            cv2.waitKey(1)
+            draw_result = np.where(output==1, (255,0,0), image)
+            print(output.shape)
+            draw_result = cv2.cvtColor(draw_result.astype(np.uint8), cv2.COLOR_BGR2RGB)
+            # cv2.imshow(str(client_id), output)
+            # cv2.waitKey(1)
             
-            encode_image = cv2.imencode('.jpeg', output)
+            
+            encode_image = cv2.imencode('.jpeg', draw_result)
             encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
             encode_image = 'data:image/jpeg;base64' + ',' + encode_image
+
+            return client_id, encode_image
         
         else:
             # 서버에서 이미지 리스트를 전송해줘야 하는 경우
+            self.prepare_imgs()
             output_list = str(client_id) + '!'
-            print('else')
+            
             for idx in range(len(self.img_list)):
                 encode_image = cv2.imencode('.jpeg', self.img_list[idx])
                 encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
@@ -66,7 +81,7 @@ class DemoTCPServer(SemanticModel):
                 output_list = output_list + encode_image
 
             
-        return client_id, output_list
+            return client_id, output_list
 
     async def loop_logic(self, websocket, path):
         while True:
@@ -88,8 +103,8 @@ class DemoTCPServer(SemanticModel):
         self.ssl_context.load_cert_chain(self.cert_dir, self.key_dir)
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
-                                             max_size=100000,
-                                             max_queue=128,
+                                             max_size=300000,
+                                             max_queue=64,
                                              read_limit=2**20,
                                              write_limit=2**20)
         asyncio.get_event_loop().run_until_complete(self.start_server)
