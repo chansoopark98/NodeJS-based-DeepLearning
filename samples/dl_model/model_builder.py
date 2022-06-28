@@ -64,6 +64,7 @@ class SemanticModel():
     def __init__(self):
         self.image_size = (320, 180)
         self.weights = './dl_model/test_weights.h5'
+        self.export_path = './dl_model/saved_model/'
         self.load_model()
         self.warm_up()
     
@@ -83,14 +84,26 @@ class SemanticModel():
             model_output, num_classes=2, upper=4, name='output')
 
         self.model = models.Model(inputs=[model_input], outputs=[semantic_output])
-        
+
+        self.model.load_weights(self.weights, by_name=True)
+
+    def save_model(self):
+        tf.keras.models.save_model(
+            self.model,
+            self.export_path,
+            overwrite=True,
+            include_optimizer=True,
+            save_format=None,
+            signatures=None,
+            options=None
+        )
+        print("save model clear")
+
 
 
     def warm_up(self):
-        self.model.load_weights(self.weights, by_name=True)
         dummy_data = tf.zeros((1, self.image_size[0], self.image_size[1],3))
-        _ = self.model.predict(dummy_data)
-        print("warm up clear")
+        _ = self.model.predict(dummy_data, workers=8, use_multiprocessing=True)
 
     
     def model_predict(self, image):
@@ -102,10 +115,7 @@ class SemanticModel():
         
         image = tf.cast(image, tf.float32)
         image = preprocess_input(image, mode='torch')
-        output = self.model.predict(image)
+        output = self.model.predict(image, workers=8, use_multiprocessing=True)
 
         output = tf.argmax(output, axis=-1)
         return output
-        
-    
-        

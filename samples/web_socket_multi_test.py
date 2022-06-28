@@ -8,7 +8,7 @@ from threading import Thread
 from dl_model.model_builder import SemanticModel
 
 
-class TCPServer(SemanticModel):
+class TCPServer():
     def __init__(self, hostname, port, cert_dir, key_dir):
         super().__init__()
         self.hostname = hostname
@@ -30,18 +30,13 @@ class TCPServer(SemanticModel):
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.resize(image, (180, 320))
 
-        predict = self.model_predict(image=image)
-        output = predict[0]
-        output = np.expand_dims(output, axis=-1)
-        output = output.astype(np.uint8)*127
 
-        # output = np.concatenate([output, output, output], axis=-1)
-
-        cv2.imshow(str(client_id), output)
+        cv2.imshow(str(client_id), image.astype(np.uint8))
         cv2.waitKey(1)
         
-        encode_image = cv2.imencode('.jpeg', output)
+        encode_image = cv2.imencode('.jpeg', image)
         encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
         encode_image = 'data:image/jpeg;base64' + ',' + encode_image
         
@@ -68,6 +63,8 @@ class TCPServer(SemanticModel):
     def run_server(self):
         self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.ssl_context.load_cert_chain(self.cert_dir, self.key_dir)
+        if use_local:
+            self.ssl_context = None
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
                                              max_size=100000,
@@ -79,16 +76,18 @@ class TCPServer(SemanticModel):
         
 
 if __name__ == "__main__":
+    use_local = False
+
+    if use_local:
+        hostname = '127.0.0.1'
+    else:
+        hostname = '0.0.0.0'
+
     server = TCPServer(
-        hostname = '0.0.0.0',
+        hostname = hostname,
         port = 7777,
         cert_dir = '../cert.pem',
         key_dir = '../privkey.pem'
     )
-    loop_server = Thread(target=server.run_server(), daemon=True)
-    loop_server.start()
-
-    
-
-
-    
+    # server.save_model()
+    server.run_server()

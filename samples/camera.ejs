@@ -63,7 +63,14 @@
 </body>
 
 <script>
+    console.log('inint');
     var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
+
+    
+    // var webSocket = new WebSocket("ws://127.0.0.1:7777");
+
+        
+    console.log('ws');
     var client_id = Math.random().toString(36).substr(2,11);
     client_id += ',';
 
@@ -76,22 +83,30 @@
     const capture_time = 1000;  // 캡쳐 시간
     const canvas = document.getElementById('canvas');
     const draw_canvas = document.getElementById('draw_canvas');
+    draw_canvas.width = 180;
+    draw_canvas.height = 320;
     let context = canvas.getContext('2d')
     let draw_context = draw_canvas.getContext('2d');
-    var draw_dummy_image = new Image(224, 224);
+    var draw_dummy_image = new Image(180, 320);
     let image_src;
     const videoElement = document.querySelector('video');
     videoElement.addEventListener('canplaythrough', render_video);
 
+
     webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
       if (webSocket.readyState === webSocket.OPEN) {
         webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
+        // draw_context.drawImage(draw_dummy_image, 0, 0);
       }
-    }, 100);
+    }, 50);
+
 
     webSocket.onmessage = function(message){
-        image_src = message.data; 
+        draw_dummy_image.src = message.data;      
     };
+
+
+         
 
     
     // 페이지를 로드하면 실행 (구성요소들 초기화)
@@ -105,8 +120,7 @@
         canvas.height = height;
         canvas.style.visibility = 'visible';
         draw_canvas.style.visibility = 'visible'; //hidden
-        draw_canvas.width = 224;
-        draw_canvas.height = 224;
+
         stream();
         video.style.visibility = 'hidden';
     }
