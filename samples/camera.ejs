@@ -53,6 +53,8 @@
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 </head>
 
+<script type="text/javascript" src="https://livejs.com/live.js"></script>
+
 <body onload="onLoad()">
     <video id="video" autoplay muted></video>
     <canvas id="guideline"></canvas>
@@ -62,12 +64,11 @@
 </body>
 
 <script>
+    
     console.log('inint');
     var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
-
     
     // var webSocket = new WebSocket("ws://127.0.0.1:7777");
-
         
     console.log('ws');
     var client_id = Math.random().toString(36).substr(2,11);
@@ -82,11 +83,11 @@
     const capture_time = 1000;  // 캡쳐 시간
     const canvas = document.getElementById('canvas');
     const draw_canvas = document.getElementById('draw_canvas');
-    draw_canvas.width = 180;
-    draw_canvas.height = 320;
+    draw_canvas.width = 224;
+    draw_canvas.height = 224;
     let context = canvas.getContext('2d')
     let draw_context = draw_canvas.getContext('2d');
-    var draw_dummy_image = new Image(180, 320);
+    var draw_dummy_image = new Image(224, 224);
     let image_src;
     const videoElement = document.querySelector('video');
     videoElement.addEventListener('canplaythrough', render_video);
@@ -97,8 +98,6 @@
 
         webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
         draw_context.drawImage(draw_dummy_image, 0, 0);
-
-        
       }
     }, 100);
 
@@ -111,7 +110,6 @@
 
 
          
-
     
     // 페이지를 로드하면 실행 (구성요소들 초기화)
     function onLoad() {
@@ -131,13 +129,33 @@
 
     // 웹에서 카메라 사용을 위한 스트림 생성
     function stream() {
-        navigator.getUserMedia(
-            {video: {facingMode: (front_camera ? "user" : "environment"),
-                    width: camera_resolution[0],
-                    height: camera_resolution[1]}, audio: false},
-            function (stream){video.srcObject = stream; video.play()},
-            function (err){alert(err)}
-        )
+        // navigator.getUserMedia(
+        //     {video: {facingMode: (front_camera ? "user" : "environment"),
+        //             width: camera_resolution[0],
+        //             height: camera_resolution[1]}, audio: false},
+        //     function (stream){video.srcObject = stream; video.play()},
+        //     function (err){alert(err)}
+        // )
+        
+        
+        let constraints = {
+            audio: false,
+            video: video
+        };
+    
+        
+        navigator.mediaDevices.getUserMedia(constraints).then(stream => {
+            stream.getVideoTracks().forEach(track => {
+                //console.log(track);
+                console.log(track.getSettings());
+            });
+            
+            video.srcObject = stream;
+            video.addEventListener("loadedmetadata", () => {
+                video.play();
+                reserve(true, stream);
+            });
+        }).catch("Open camera failed!");
     }
 
     async function render_video(){

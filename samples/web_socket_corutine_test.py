@@ -11,6 +11,11 @@ from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2_grpc
 
 # docker run -t --gpus all --rm -p 8500:8500 -v "/home/park/park/NodeJS-based-DeepLearning/samples/dl_model/saved_model:/models/test_model" -e MODEL_NAME=test_model tensorflow/serving:2.6.2-gpu
+# docker run -t --gpus all --rm -p 8500:8500 -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path:/models/test_model" -e MODEL_NAME=test_model tensorflow/serving:2.6.2-gpu
+# /home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path/
+
+# docker run -t --gpus all --rm -p 8500:8500 -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path:/models/test_model2" -e MODEL_NAME=test_model2 tensorflow/serving:2.6.2-gpu
+
 
 class RequestRestApi(object):
     def __init__(self, host_name, model_name):
@@ -30,7 +35,7 @@ class RequestRestApi(object):
         self.request = predict_pb2.PredictRequest()
         self.request.model_spec.name = self.model_name
         self.request.inputs['input_1'].CopyFrom(
-        tf.make_tensor_proto(image, shape=[1, 320, 180, 3]))
+        tf.make_tensor_proto(image, shape=[1, 224, 224, 3]))
         return await self._stub.Predict(self.request, 5.0)
 
 
@@ -58,27 +63,26 @@ class TCPServer():
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(image, (180, 320))
-        image = image.astype(np.float32) / 255.
+        image = cv2.resize(image, (224, 224))
+        # image = (image.astype(np.float32) / 127.5) - 1.
         
-        send_image = np.expand_dims(image, axis=0)
-
+        # send_image = np.expand_dims(image, axis=0)
         start = time.process_time()
-        output = await session.predict(image=send_image)
-
-        output = output.outputs['output'].float_val
-        output = np.array(output)
-        output = np.reshape(output, (320, 180, 2))
-        output = np.argmax(output, axis=-1)
-        output = output * 127
+        # output = await session.predict(image=send_image)
+        # output = output.outputs['output'].float_val
+        # output = np.array(output)
+        # output = np.reshape(output, (224, 224, 2))
+        # output = np.argmax(output, axis=-1)
+        # output = output * 127
 
         duration = (time.process_time() - start)
         print("id: {0}, time: {1}".format(client_id, duration))
 
-        cv2.imshow(str(client_id), output.astype(np.uint8))
+        # cv2.imshow(str(client_id), output.astype(np.uint8))
+        cv2.imshow(str(client_id), image)
         cv2.waitKey(1)
         
-        encode_image = cv2.imencode('.jpeg', output)
+        encode_image = cv2.imencode('.jpeg', image)
         encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
         encode_image = 'data:image/jpeg;base64' + ',' + encode_image
 
@@ -87,7 +91,7 @@ class TCPServer():
 
             
     async def loop_logic(self, websocket, path):
-        async with RequestRestApi('localhost:8500', 'test_model') as session:
+        async with RequestRestApi('localhost:8500', 'test_model2') as session:
             while True:
                 try:
                     data = await websocket.recv()
