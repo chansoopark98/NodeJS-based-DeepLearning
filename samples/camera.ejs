@@ -91,18 +91,23 @@
     let image_src;
     const videoElement = document.querySelector('video');
     videoElement.addEventListener('canplaythrough', render_video);
-
+    
 
     webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
       if (webSocket.readyState === webSocket.OPEN) {
+
         webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
-        // draw_context.drawImage(draw_dummy_image, 0, 0);
+        draw_context.drawImage(draw_dummy_image, 0, 0);
+
+        
       }
     }, 50);
 
 
     webSocket.onmessage = function(message){
         draw_dummy_image.src = message.data;      
+
+        
     };
 
 

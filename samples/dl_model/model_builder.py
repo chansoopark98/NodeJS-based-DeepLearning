@@ -114,8 +114,10 @@ class SemanticModel():
             method=tf.image.ResizeMethod.BILINEAR)
         
         image = tf.cast(image, tf.float32)
+        
         image = preprocess_input(image, mode='torch')
-        output = self.model.predict(image, workers=8, use_multiprocessing=True)
+        output = self.model.predict(image, workers=16, use_multiprocessing=True)
+        # output = self.model.predict_on_batch(image)
 
         output = tf.argmax(output, axis=-1)
         return output
