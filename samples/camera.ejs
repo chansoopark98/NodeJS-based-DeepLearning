@@ -58,7 +58,6 @@
     <canvas id="guideline"></canvas>
     <canvas id="canvas"></canvas>
     <canvas id="draw_canvas"></canvas>
-    <button id="switch_camera" onclick="switchCamera()">카메라 전환</button>
     <input type="hidden" name="result_data" value="" id="js_data_input">
 </body>
 
@@ -101,7 +100,7 @@
 
         
       }
-    }, 50);
+    }, 100);
 
 
     webSocket.onmessage = function(message){
@@ -139,12 +138,6 @@
             function (stream){video.srcObject = stream; video.play()},
             function (err){alert(err)}
         )
-    }
-
-    function switchCamera() {
-        front_camera = !front_camera
-        video.srcObject.getTracks().forEach(track => {track.stop()})
-        stream()
     }
 
     async function render_video(){
