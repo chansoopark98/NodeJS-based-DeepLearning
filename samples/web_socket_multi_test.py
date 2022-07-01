@@ -4,11 +4,13 @@ import websockets
 import cv2
 import numpy as np
 import base64
-from threading import Thread
+import time
 from dl_model.model_builder import SemanticModel
+import tensorflow as tf
 
+client_num = 1
 
-class TCPServer():
+class TCPServer(SemanticModel):
     def __init__(self, hostname, port, cert_dir, key_dir):
         super().__init__()
         self.hostname = hostname
@@ -16,7 +18,7 @@ class TCPServer():
         self.cert_dir = cert_dir
         self.key_dir = key_dir
 
-    def rcv_data(self, data):
+    async def rcv_data(self, data, gpu_name):
         data = data[0].split(',')
         client_id = data[0]
         data_type = data[1]
@@ -30,10 +32,13 @@ class TCPServer():
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(image, (180, 320))
 
+        start = time.process_time()
+        output = self.model_predict(image=image, gpu_name=gpu_name)
+        duration = (time.process_time() - start)
+        # print("id: {0}, time: {1}".format(client_id, duration))
 
-        cv2.imshow(str(client_id), image.astype(np.uint8))
+        cv2.imshow(str(client_id), image)
         cv2.waitKey(1)
         
         encode_image = cv2.imencode('.jpeg', image)
@@ -45,19 +50,30 @@ class TCPServer():
         return client_id, encode_image
 
     async def loop_logic(self, websocket, path):
-        while True:
-            try:
-                # Wait data from client
-                data = await asyncio.gather(websocket.recv())
-                client_id, rcv_data = self.rcv_data(data=data)
-                print(client_id)
-                await websocket.send(rcv_data)
+        global client_num
+        if client_num % 2 == 1:
+            gpu_name = '/device:GPU:0'
+        else:
+            gpu_name = '/device:GPU:1'
 
-            except Exception as e:
-                print('Log : {0}'.format(e))
-                cv2.destroyWindow(str(client_id))
-                break
-                # websocket.close()
+        print('client_num : {0},  gpu_num{1}'.format(client_num, gpu_name))
+        client_num += 1
+        # tf.debugging.set_log_device_placement(True)
+
+        with tf.device(gpu_name):
+            while True:
+                try:
+                    # Wait data from client
+                    data = await asyncio.gather(websocket.recv())
+                    client_id, rcv_data = await self.rcv_data(data=data, gpu_name=gpu_name)
+                    
+                    await websocket.send(rcv_data)
+
+                except Exception as e:
+                    print('Log : {0}'.format(e))
+                    cv2.destroyWindow(str(client_id))
+                    break
+                    # websocket.close()
 
     
     def run_server(self):
@@ -76,7 +92,7 @@ class TCPServer():
         
 
 if __name__ == "__main__":
-    use_local = False
+    use_local = True
 
     if use_local:
         hostname = '127.0.0.1'

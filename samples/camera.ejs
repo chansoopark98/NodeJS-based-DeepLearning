@@ -65,10 +65,11 @@
 
 <script>
     
+
     console.log('inint');
-    var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
+    // var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
     
-    // var webSocket = new WebSocket("ws://127.0.0.1:7777");
+    var webSocket = new WebSocket("ws://127.0.0.1:7777");
         
     console.log('ws');
     var client_id = Math.random().toString(36).substr(2,11);
@@ -91,7 +92,6 @@
     let image_src;
     const videoElement = document.querySelector('video');
     videoElement.addEventListener('canplaythrough', render_video);
-    
 
     webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
       if (webSocket.readyState === webSocket.OPEN) {
@@ -99,7 +99,9 @@
         webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
         draw_context.drawImage(draw_dummy_image, 0, 0);
       }
-    }, 100);
+    }, 250 );
+
+
 
 
     webSocket.onmessage = function(message){
