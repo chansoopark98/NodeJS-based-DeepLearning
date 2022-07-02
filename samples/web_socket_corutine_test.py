@@ -30,9 +30,9 @@ docker run -t --gpus device=1 -p 8499:8499 --rm -v "/home/park/park/Tensorflow-K
 
 TensorRT
 
-docker run --runtime=nvidia -t -p 8499:8499 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="0" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8499 --rest_api_port=8501
+docker run --runtime=nvidia -t -p 8499:8499 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="0" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8499 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4
 
-docker run --runtime=nvidia -t -p 8499:8499 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="0" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 tensorflow/serving:2.6.2-gpu --port=8499 --rest_api_port=8501
+docker run --runtime=nvidia -t -p 8500:8500 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="1" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8500 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4
 
 
 
@@ -53,7 +53,6 @@ class RequestRestApi(object):
 
     async def __aexit__(self, exc_type, exc, tb):
         await self._channel.close()
-
 
     async def predict(self, image):
         self.request = predict_pb2.PredictRequest()
