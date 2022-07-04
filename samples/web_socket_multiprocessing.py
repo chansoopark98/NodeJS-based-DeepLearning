@@ -10,7 +10,7 @@ import tensorflow as tf
 import multiprocessing
 from websockets.extensions import permessage_deflate
 import collections
-
+import concurrent.futures
 client_num = 1
 
 class TCPServer():
@@ -73,7 +73,7 @@ class TCPServer():
                     client_id, rcv_data = await self.rcv_data(data=data, gpu_name=gpu_name)
                     
                     await websocket.send("1011010101")
-                    websocket.Flush()
+                    
                     # buffer = collections.deque
                     # buffer.clear()
                     
@@ -94,17 +94,17 @@ class TCPServer():
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
                                              max_size=100000,
-                                             max_queue=128,
-                                             read_limit=2**20,
-                                             write_limit=2**20,
+                                             max_queue=4,
+                                             read_limit=2**16,
+                                             write_limit=2**15,
                                              extensions=[
         permessage_deflate.ServerPerMessageDeflateFactory(
-            server_max_window_bits=11,
-            client_max_window_bits=11,
-            compress_settings={"memLevel": 4},
+            server_max_window_bits=15,
+            client_max_window_bits=15,
+            compress_settings={"memLevel": 9},
         ),
     ],)
-
+        
         async with self.start_server:
             print(self.start_server)
             await asyncio.Future()
@@ -125,4 +125,6 @@ if __name__ == "__main__":
         cert_dir = '../cert.pem',
         key_dir = '../privkey.pem'
     )
-    asyncio.run(server.run_server())
+    with concurrent.futures.ProcessPoolExecutor() as pool:
+            server.loop.run_in_executor(pool, asyncio.run(server.run_server()))
+            
