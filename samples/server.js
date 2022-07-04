@@ -1,4 +1,7 @@
-var app = require('express')();
+var express = require('express');
+var app = express();
+var cors = require('cors');
+
 let fs = require('fs');
 let options = {
     key: fs.readFileSync('./privkey.pem'),
@@ -6,8 +9,12 @@ let options = {
     requestCert: false,
     rejectUnauthorized: false
 };
+
+app.use(cors());
+
 var server_port = 5555;
 var server = require('https').createServer(options, app);
+
 
 app.set('view engine', 'ejs'); // 렌더링 엔진 모드를 ejs로 설정
 app.set('views',  __dirname + '/views');    // ejs이 있는 폴더를 지정

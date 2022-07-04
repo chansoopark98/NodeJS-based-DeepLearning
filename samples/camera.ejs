@@ -68,7 +68,6 @@
 
     console.log('inint');
     // var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
-    
     var webSocket = new WebSocket("ws://127.0.0.1:7777");
         
     console.log('ws');
@@ -99,7 +98,7 @@
         webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
         draw_context.drawImage(draw_dummy_image, 0, 0);
       }
-    }, 50);
+    }, 50  );
 
 
 

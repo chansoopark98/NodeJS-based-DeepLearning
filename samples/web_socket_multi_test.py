@@ -92,7 +92,7 @@ class TCPServer(SemanticModel):
         
 
 if __name__ == "__main__":
-    use_local = True
+    use_local = False
 
     if use_local:
         hostname = '127.0.0.1'

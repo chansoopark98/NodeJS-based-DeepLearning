@@ -9,7 +9,7 @@ import tensorflow as tf
 from aiogrpc import insecure_channel
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2_grpc
-
+from concurrent.futures import ProcessPoolExecutor
 # docker run -t --gpus all --rm -p 8500:8500 -v "/home/park/park/NodeJS-based-DeepLearning/samples/dl_model/saved_model:/models/test_model" -e MODEL_NAME=test_model tensorflow/serving:2.6.2-gpu
 # docker run -t --gpus all --rm -p 8500:8500 -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path:/models/test_model" -e MODEL_NAME=test_model tensorflow/serving:2.6.2-gpu
 # /home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path/
@@ -30,16 +30,20 @@ docker run -t --gpus device=1 -p 8499:8499 --rm -v "/home/park/park/Tensorflow-K
 
 TensorRT
 
-docker run --runtime=nvidia -t -p 8499:8499 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="0" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8499 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4
+docker run --runtime=nvidia -t -p 8497:8497 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="0" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8497 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4 --per_process_gpu_memory_fraction=0.3
 
-docker run --runtime=nvidia -t -p 8500:8500 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="1" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8500 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4
+docker run --runtime=nvidia -t -p 8498:8498 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="0" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8498 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4 --per_process_gpu_memory_fraction=0.3
 
+docker run --runtime=nvidia -t -p 8499:8499 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="1" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8499 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4 --per_process_gpu_memory_fraction=0.3
 
-
+docker run --runtime=nvidia -t -p 8500:8500 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="1" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8500 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4 --per_process_gpu_memory_fraction=0.3
 
 """
 
+
 client_num = 1
+avg_time = []
+
 
 class RequestRestApi(object):
     def __init__(self, host_name, model_name):
@@ -86,20 +90,21 @@ class TCPServer():
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        start = time.process_time()
         image = cv2.resize(image, (224, 224))
         image = (image.astype(np.float32) / 127.5) - 1.
         
         # send_image = np.expand_dims(image, axis=0)
-        start = time.process_time()
+        
         output = await session.predict(image=image)
+
         output = output.outputs['output'].float_val
         output = np.array(output)
         output = np.reshape(output, (224, 224, 2))
         output = np.argmax(output, axis=-1)
-        output = output * 127
-
         duration = (time.process_time() - start)
-        # print("id: {0}, time: {1}".format(client_id, duration))
+        print("id: {0}, time: {1}".format(client_id, duration))
+        output = output * 127
 
         # cv2.imshow(str(client_id), output.astype(np.uint8))
         cv2.imshow(str(client_id), image)
@@ -115,15 +120,19 @@ class TCPServer():
             
     async def loop_logic(self, websocket, path):
         global client_num
-        print('client_num : {0}'.format(client_num))
-        client_num += 1
-
-        if client_num % 2 == 1:
+        
+        if client_num % 4 == 1:
+            address = '0.0.0.0:8497'
+        elif client_num % 4 == 2:
+            address = '0.0.0.0:8498'
+        elif client_num % 4== 3:
             address = '0.0.0.0:8499'
         else:
             address = '0.0.0.0:8500'
 
         async with RequestRestApi(address, 'test_model2') as session:
+            print('client_num : {0}, address name {1}'.format(client_num, session.endpoint))
+            client_num += 1
             while True:
                 try:
                     data = await websocket.recv()
@@ -135,8 +144,7 @@ class TCPServer():
                     cv2.destroyWindow(str(client_id))
                     await websocket.close()
                     client_num -= 1
-                    break
-                    
+                    break           
 
     def run_server(self):
         self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -149,10 +157,11 @@ class TCPServer():
                                              max_queue=1,
                                              read_limit=2**20,
                                              write_limit=2**20)
-                                               
+                      
         asyncio.get_event_loop().run_until_complete(self.start_server)
         asyncio.get_event_loop().run_forever()
         
+
 
 if __name__ == "__main__":
     use_local = True

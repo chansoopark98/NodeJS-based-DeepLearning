@@ -67,7 +67,7 @@ class SemanticModel():
         self.image_size = (224, 224)
         self.weights = './dl_model/test_weights.h5'
         self.export_path = './dl_model/saved_model/'
-        tf.config.set_soft_device_placement(True)
+        # tf.config.set_soft_device_placement(True)
         self.load_model()
         self.warm_up()
     
@@ -76,17 +76,17 @@ class SemanticModel():
         converted_model_path = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt/1/'
         # self.model = tf.saved_model.load(converted_model_path)
         print('load_model')
-        self.model = tf.saved_model.load(converted_model_path, tags=[tag_constants.SERVING])
-        signature_keys = list(self.model.signatures.keys())
+        try:
+            self.model = tf.saved_model.load(converted_model_path, tags=[tag_constants.SERVING])
+        except Exception as e:
+            print('load_model error')
+            # print('Log : {0}'.format(e))
+        # signature_keys = list(self.model.signatures.keys())
         # print(signature_keys)
 
         print('infer')
         self.infer = self.model.signatures['serving_default']
         # print(self.infer.structured_outputs)
-
-        
-
-        
 
     def warm_up(self):
         dummy_data = tf.zeros((1, self.image_size[0], self.image_size[1],3))
