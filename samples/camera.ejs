@@ -65,10 +65,12 @@
 
 <script>
     
-
+    
     console.log('inint');
     // var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
+
     var webSocket = new WebSocket("ws://127.0.0.1:7777");
+    
         
     console.log('ws');
     var client_id = Math.random().toString(36).substr(2,11);
@@ -96,15 +98,15 @@
       if (webSocket.readyState === webSocket.OPEN) {
 
         webSocket.send(client_id + canvas.toDataURL('image/jpeg'), 0.3);
-        draw_context.drawImage(draw_dummy_image, 0, 0);
+        // draw_context.drawImage(draw_dummy_image, 0, 0);
       }
-    }, 50          );
+    }, 50           );
 
 
 
 
     webSocket.onmessage = function(message){
-        draw_dummy_image.src = message.data;      
+        // draw_dummy_image.src = message.data;      
 
         
     };

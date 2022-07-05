@@ -9,10 +9,10 @@ from dl_model.model_builder import SemanticModel
 import tensorflow as tf
 import multiprocessing
 from websockets.extensions import permessage_deflate
-import collections
+import wsaccel
 import concurrent.futures
 client_num = 1
-
+wsaccel.patch_autobahn
 class TCPServer():
     def __init__(self, hostname, port, cert_dir, key_dir):
         super().__init__()
@@ -67,12 +67,11 @@ class TCPServer():
         with tf.device(gpu_name):
             while True:
                 try:
-                    
                     # Wait data from client
                     data = await asyncio.gather(websocket.recv())
                     client_id, rcv_data = await self.rcv_data(data=data, gpu_name=gpu_name)
                     
-                    await websocket.send("1011010101")
+                    # await websocket.send("1011010101")
                     
                     # buffer = collections.deque
                     # buffer.clear()
