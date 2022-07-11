@@ -13,7 +13,8 @@ import wsaccel
 import concurrent.futures
 client_num = 1
 wsaccel.patch_autobahn
-class TCPServer():
+
+class TCPServer(SemanticModel):
     def __init__(self, hostname, port, cert_dir, key_dir):
         super().__init__()
         self.hostname = hostname
@@ -71,7 +72,7 @@ class TCPServer():
                     data = await asyncio.gather(websocket.recv())
                     client_id, rcv_data = await self.rcv_data(data=data, gpu_name=gpu_name)
                     
-                    # await websocket.send("1011010101")
+                    await websocket.send(rcv_data)
                     
                     # buffer = collections.deque
                     # buffer.clear()

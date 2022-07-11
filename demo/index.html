@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Test</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+    <meta http-equiv="ScreenOrientation" content="autoRotate:disabled" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="google" content="notranslate">
+    <meta name="theme-color" content="#005AAB">
+
+    <link rel="stylesheet" type="text/css" href="./styles/index.css"/>
+
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "./build/three.module.js"
+          }
+        }
+      </script>
+    <script type="module" src="./modules/index.js"></script>
+    <script type="module" src="./modules/three_test.js"></script>
+</head>
+<body>
+    <div id="ar-container">
+        <video id="base-video" playsinline></video>
+        <canvas id="render_area"></canvas>
+        <button id="start-button">START</button>
+    </div>
+</body>
+</html>

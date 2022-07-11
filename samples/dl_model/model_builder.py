@@ -105,6 +105,8 @@ class SemanticModel():
         # '/device:GPU:0'
         
             # image = tf.expand_dims(image, axis=0)
+        
+        shape = image.shape
             
         image = tf.image.resize(image, size=(self.image_size[0], self.image_size[1]),
             method=tf.image.ResizeMethod.BILINEAR)
@@ -117,5 +119,8 @@ class SemanticModel():
 
         # output = self.model.predict_on_batch(image)
         output = tf.argmax(preds, axis=-1)
+        
+        
+        output = tf.image.resize(output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         output = output[0]
-        return output.numpy().astype(np.uint8)
+        return output.numpy().astype(np.uint8) * 127

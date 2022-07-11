@@ -37,8 +37,8 @@
         }
         button {
             /* margin-right: 5rem; */
-            position: relative;
-            top: 1000px;
+            position: absolute;
+            top: 500px;
             left: 0;
             z-index: 0;
             width: 50%;
@@ -53,25 +53,23 @@
 </head>
 
 <script type="text/javascript" src="https://livejs.com/live.js"></script>
+<script type="module">
+     
+</script>
 
 <body onload="onLoad()">
     <video id="video" autoplay muted></video>
     <canvas id="canvas"></canvas>
-    <canvas id="draw_canvas"></canvas>
     <button type="button" onclick="startEvent()">START</button>
     <input type="hidden" name="result_data" value="" id="js_data_input">
 </body>
 
 <script>
     
-    
-    console.log('inint');
-    // var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
+
 
     var webSocket = new WebSocket("ws://127.0.0.1:7777");
     
-        
-    console.log('ws');
     var client_id = Math.random().toString(36).substr(2,11);
     client_id += ',';
 
@@ -83,17 +81,12 @@
     const fps = 30;      //FPS
     const capture_time = 1000;  // 캡쳐 시간
     const canvas = document.getElementById('canvas');
-    const draw_canvas = document.getElementById('draw_canvas');
-    draw_canvas.width = 480;
-    draw_canvas.height = 640;
     let context = canvas.getContext('2d');
-    let draw_context = draw_canvas.getContext('2d');
-    var draw_dummy_image = new Image(480, 640)
     let image_src;
     const videoElement = document.querySelector('video');
     videoElement.addEventListener('canplaythrough', render_video);
 
-
+    
     function startEvent() {
         webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
             if (webSocket.readyState === webSocket.OPEN) {
@@ -101,22 +94,10 @@
                 }
             }, 150);        
     }
-    // webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
-    //   if (webSocket.readyState === webSocket.OPEN) {
-
-    //     webSocket.send(client_id + canvas.toDataURL('image/jpeg', 0.3));
-    //     // draw_context.drawImage(draw_dummy_image, 0, 0);
-    //   }
-    // }, 50           );
-
-
-
 
     webSocket.onmessage = function(message){
         draw_dummy_image.src = message.data;    
         render_context();
-        
-        // draw_context.drawImage(draw_dummy_image, 0, 0);  
     };
          
     
@@ -129,11 +110,8 @@
         video.height = height;
         canvas.width = width;
         canvas.height = height;
-        draw_canvas.width = width;
-        draw_canvas.height = height;
         canvas.style.visibility = 'hidden';
         canvas.style.display='none';
-        draw_canvas.style.visibility = 'visible'; //hidden
 
         stream();
         video.style.visibility = 'hidden';
@@ -141,24 +119,13 @@
 
     // 웹에서 카메라 사용을 위한 스트림 생성
     function stream() {
-        // navigator.getUserMedia(
-        //     {video: {facingMode: (front_camera ? "user" : "environment"),
-        //             width: camera_resolution[0],
-        //             height: camera_resolution[1]}, audio: false},
-        //     function (stream){video.srcObject = stream; video.play()},
-        //     function (err){alert(err)}
-        // )
-        
-        
         let constraints = {
             audio: false,
             video: video
         };
     
-        
         navigator.mediaDevices.getUserMedia(constraints).then(stream => {
             stream.getVideoTracks().forEach(track => {
-                //console.log(track);
                 console.log(track.getSettings());
             });
             
@@ -172,13 +139,8 @@
 
     async function render_video(){
          context.drawImage(videoElement, 0, 0);
-         
+         render();
          await requestAnimationFrame(render_video)
-    }
-
-    async function render_context(){
-        draw_context.drawImage(draw_dummy_image, 0, 0);  
-        await requestAnimationFrame(render_context)
     }
 
 </script>

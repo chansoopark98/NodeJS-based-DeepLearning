@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        video {
+            background-color: black;
+            z-index: -1;
+            width: 100%;
+            height: auto;
+        }
+        #canvas {
+            background-color: rgba(127, 127, 127, 0.5);
+            position: relative;
+            /* top: 0; */
+            /* left: 0; */
+            z-index: -1;
+            width: 100%;
+            /* height: auto; */
+        }
+        #draw_canvas {
+            background-color: rgba(127, 127, 127, 0.5);
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            width: 100%;
+            height: 100%;
+        }
+        button, div{
+            font-size: 5rem;
+        }
+        button {
+            /* margin-right: 5rem; */
+            position: absolute;
+            top: 500px;
+            left: 0;
+            z-index: 0;
+            width: 50%;
+            height: 100%;
+        }
+        form {
+            display: inline;
+        }
+    </style>
+    <title>Test</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+</head>
+
+<script type="text/javascript" src="https://livejs.com/live.js"></script>
+<script type="importmap">
+    {
+      "imports": {
+        "three": "./build/three.module.js"
+      }
+    }
+  </script>
+
+<body onload="onLoad()">
+    <video id="video" autoplay muted></video>
+    <canvas id="canvas"></canvas>
+    <button type="button" onclick="startEvent()">START</button>
+    <input type="hidden" name="result_data" value="" id="js_data_input">
+
+    <script type="module" src="./modules/three_test.js"></script>
+    
+    <script>
+        // 페이지를 로드하면 실행 (구성요소들 초기화)
+    function onLoad() {
+        if (navigator.platform.indexOf('arm') !== -1 || navigator.platform.indexOf('aarch') !== -1) {
+            [width, height] = [height, width]
+        }
+        // const canvas = document.getElementById('canvas');
+    
+        // const videoElement = document.querySelector('video');
+        video.width = width;
+        video.height = height;
+        canvas.width = width;
+        canvas.height = height;
+        canvas.style.visibility = 'hidden';
+        canvas.style.display='none';
+
+        // stream();
+        video.style.visibility = 'hidden';
+    }
+
+    </script>
+</body>
+</html>
