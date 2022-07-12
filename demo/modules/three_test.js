@@ -4,7 +4,7 @@ var scene = new THREE.Scene();
 var camera = new THREE.PerspectiveCamera(50, 500 / 400, 0.1, 1000);
 
 //var renderer = new THREE.WebGLRenderer();
-var renderer = new THREE.WebGLRenderer( { canvas: render_area } );
+var renderer = new THREE.WebGLRenderer( { canvas: render_area, alpha: true, preserveDrawingBuffer:true  } );
 renderer.setSize(500, 400);
 //document.body.appendChild(renderer.domElement);
 
@@ -35,6 +35,7 @@ sphere[2].material.color.setHex(hex);
 
 
 var render = function() {
+  console.log('render!');
   requestAnimationFrame(render);
   renderer.render(scene, camera);
 };

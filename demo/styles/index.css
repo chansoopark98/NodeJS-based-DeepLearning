@@ -55,7 +55,7 @@ html, body {
 	object-fit: cover;
 }
 
-#render-area {
+#render_area {
 	position: absolute;
 	left: 0;
 	top: 0;

@@ -14,7 +14,7 @@ import concurrent.futures
 client_num = 1
 wsaccel.patch_autobahn
 
-class TCPServer(SemanticModel):
+class TCPServer():
     def __init__(self, hostname, port, cert_dir, key_dir):
         super().__init__()
         self.hostname = hostname
