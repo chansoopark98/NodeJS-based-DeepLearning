@@ -89,10 +89,13 @@
              audio: false,
              video: video
          };
-     
+         
+        //  console.log('focal lenght?', navigator.mediaDevices.getCameraSpecification());
+
          navigator.mediaDevices.getUserMedia(constraints).then(stream => {
              stream.getVideoTracks().forEach(track => {
-                 //console.log(track);
+                 
+                 console.log(track);
                  console.log(track.getSettings());
              });
              
