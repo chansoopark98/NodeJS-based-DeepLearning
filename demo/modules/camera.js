@@ -4,9 +4,13 @@
  *  Camera function for get rear camerea with general wide-angle
  */
 
+ console.log('load camera.js');
+ 
  let isIOS = null;
  let isMobile = null;
+
  
+
  function getLogTitle(text) {
      let base = "======================================";
      return (base + `\n${text}\n` +base);
@@ -73,6 +77,8 @@
  }
  
  function openCamera(baseVideo, deviceId) {
+    console.log('openCamera');
+        
      return new Promise((reserve, reject) => {
          let video = {
              width: 1280,
@@ -100,7 +106,9 @@
              });
              
              baseVideo.srcObject = stream;
+             // Original player
              baseVideo.addEventListener("loadedmetadata", () => {
+                 console.log('play');
                  baseVideo.play();
                  reserve(true, stream);
              });

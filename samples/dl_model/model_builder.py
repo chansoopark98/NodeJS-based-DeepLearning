@@ -1,111 +1,54 @@
-import tensorflow as tf
-import tensorflow.keras.models as models
-from .model_zoo.UNet import unet
-from .model_zoo.DeepLabV3plus import DeeplabV3_plus
-from .model_zoo.modify_DeepLabV3plus import deepLabV3Plus
-from .model_zoo.EfficientNetV2 import EfficientNetV2S
-from .model_zoo.DDRNet_23_slim import ddrnet_23_slim
-from .model_zoo.mobileNetV3 import MobileNetV3_Small
-from tensorflow.keras.applications.imagenet_utils import preprocess_input
 from tensorflow.python.saved_model import tag_constants
+import tensorflow as tf
 import numpy as np
+import open3d as o3d
+import cv2
+import math
 
 def classifier(x, num_classes=19, upper=4, name=None):
-    x = tf.keras.layers.Conv2D(num_classes, 1, strides=1,
-                      kernel_initializer=tf.keras.initializers.VarianceScaling(scale=1.0, mode="fan_out", distribution="truncated_normal"))(x)
-    x = tf.keras.layers.UpSampling2D(size=(upper, upper), interpolation='bilinear', name=name)(x)
+    x = tf.keras.layers.Conv2D(num_classes,
+                               kernel_size=1,
+                               strides=1,
+                               kernel_initializer=tf.keras.initializers.VarianceScaling(
+                                   scale=1.0, mode="fan_out", distribution="truncated_normal")
+                               )(x)
+    x = tf.keras.layers.UpSampling2D(size=(upper, upper),
+                                     interpolation='bilinear',
+                                     name=name)(x)
     return x
-
-def segmentation_model(image_size):
-    # model_input, model_output = unet(input_shape=(image_size[0], image_size[1], 3), use_logits=False)
-    # return tf.keras.Model(model_input, model_output)
-    return ddrnet_23_slim(input_shape=(image_size[0], image_size[1], 3), num_classes=1)
-
-    
-
-def semantic_model(image_size, model='MobileNetV3S'):
-    if model=='MobileNetV3S':
-        base = MobileNetV3_Small(shape=(image_size[0], image_size[1], 3), n_class=1000, alpha=1, include_top=False).build()
-        # 224 1
-        # 112 2
-        # 56 4 -> add
-        # 28 8
-        # 14 16 -> add_5
-        # get output stride 
-            # 1/4 : re_lu_1
-            # 1/16
-        c5 = base.get_layer('add_5').output  # 16x32 256 or get_layer('post_swish') => 확장된 채널 1280
-        c2 = base.get_layer('add').output  # 128x256 48
-    else:
-        base = EfficientNetV2S(input_shape=(image_size[0], image_size[1], 3), pretrained="imagenet")
-        c5 = base.get_layer('add_34').output
-        c2 = base.get_layer('add_4').output 
-
-
-
-
-    """
-    for EfficientNetV2S (input resolution: 512x1024)
-    32x64 = 'add_34'
-    64x128 = 'add_7'
-    128x256 = 'add_4'
-    """
-    features = [c2, c5]
-
-    model_input = base.input
-    model_output = deepLabV3Plus(features=features, activation='swish')
-
-    semantic_output = classifier(model_output, num_classes=2, upper=4, name='output')
-
-    model = models.Model(inputs=[model_input], outputs=[semantic_output])
-    
-    return model
-
 
 class SemanticModel():
     def __init__(self):
-        self.image_size = (224, 224)
-        self.weights = './dl_model/test_weights.h5'
-        self.export_path = './dl_model/saved_model/'
+        self.image_size = (320, 240)
         # tf.config.set_soft_device_placement(True)
         self.load_model()
         self.warm_up()
     
     def load_model(self):
-
         converted_model_path = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt/1/'
-        # self.model = tf.saved_model.load(converted_model_path)
+    
         print('load_model')
-        try:
-            self.model = tf.saved_model.load(converted_model_path, tags=[tag_constants.SERVING])
-        except Exception as e:
-            print('load_model error')
-            # print('Log : {0}'.format(e))
-        # signature_keys = list(self.model.signatures.keys())
-        # print(signature_keys)
-
+        seg_model = tf.saved_model.load(converted_model_path, tags=[tag_constants.SERVING])
+    
         print('infer')
-        self.infer = self.model.signatures['serving_default']
-        # print(self.infer.structured_outputs)
+        self.infer = seg_model.signatures['serving_default']
+
 
     def warm_up(self):
         dummy_data = tf.zeros((1, self.image_size[0], self.image_size[1],3))
-        
-        print(dummy_data.shape)
+    
         with tf.device('/device:GPU:0'):
-            _ = self.infer(dummy_data)
+            pred_seg = self.infer(dummy_data)
+            _ = pred_seg['output']
             print('gpu 0 warm up')
         with tf.device('/device:GPU:1'):
-            _ = self.infer(dummy_data)
+            pred_seg = self.infer(dummy_data)
+            _ = pred_seg['output']
             print('gpu 1 warm up')
     
-
     
     def model_predict(self, image, gpu_name):
-        # '/device:GPU:0'
-        
-            # image = tf.expand_dims(image, axis=0)
-        
+        # with tf.device(gpu_name):
         shape = image.shape
             
         image = tf.image.resize(image, size=(self.image_size[0], self.image_size[1]),
@@ -113,14 +56,93 @@ class SemanticModel():
         
         image = tf.cast(image, tf.float32)
         image = tf.expand_dims(image, axis=0)
-        image = (image / 127.5) - 1.
-        labeling = self.infer(image)
-        preds = labeling['output']
+        image /= 255.
 
-        # output = self.model.predict_on_batch(image)
-        output = tf.argmax(preds, axis=-1)
+        preds = self.infer(image)
+        pred_output = preds['output']
+        output = tf.argmax(pred_output, axis=-1)
         
         
         output = tf.image.resize(output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         output = output[0]
         return output.numpy().astype(np.uint8) * 127
+
+
+    def euler_from_matrix(self, rot, degree=False ):
+        
+        sy = math.sqrt( rot[2, 1]*rot[2, 1]+rot[2, 2]*rot[2, 2] )
+        singular = sy < 1e-6
+
+        roll = math.atan2( rot[2, 1], rot[2, 2] )
+        pitch = math.atan2(-rot[2, 0], math.sqrt( rot[2, 1]*rot[2, 1]+rot[2, 2]*rot[2, 2] ) )
+        yaw = math.atan2( rot[1, 0], rot[0, 0] )
+        
+        if degree:
+            return np.degrees(roll), np.degrees(pitch), np.degrees(yaw)
+        else:
+            return roll, pitch, yaw
+
+    def calc_pca(self, img, mask):
+        img_h = img.shape[0]
+        img_w = img.shape[1]
+
+        # Get display area
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        tmp = 0
+        display_contours = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area > tmp: 
+                tmp = area
+                display_contours.append(contour)
+                
+        x,y,w,h = cv2.boundingRect(display_contours[0])
+
+        depth_map = np.ones((img.shape[0], img.shape[1], 1), np.float32)
+        depth_map[y:y+h, x:x+w] *= 300.
+
+        open3d_rgb = o3d.geometry.Image(img)
+        pred_depth = o3d.geometry.Image(depth_map)
+
+        rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+            open3d_rgb, pred_depth)
+
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
+            rgbd_image,
+            o3d.camera.PinholeCameraIntrinsic(
+                o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault))
+
+        xyz_load = np.asarray(pcd.points)
+ 
+        pc = np.zeros((img_w, img_h, 3))
+        xyz_load = np.reshape(xyz_load, (img_w, img_h, 3))
+        pc[:,:,0] = xyz_load[:, :, 0]
+        pc[:,:,1] = xyz_load[:, :, 1]
+        pc[:,:,2] = xyz_load[:, :, 2]
+
+        center_x = x + (w//2)
+        center_y = y + (h//2)
+        
+        choose_pc = pc[center_y-1:center_y+1, center_x-1:center_x+1]
+
+        pointCloud_area = np.zeros((img_w, img_h), dtype=np.uint8)
+        pointCloud_area = cv2.line(pointCloud_area, (center_x-1, center_y-1), (center_x+1, center_y+1), 255, 10, cv2.LINE_AA)
+        choose_pc = pc[np.where(pointCloud_area[:, :]==255)]
+                    
+        choose_pc = choose_pc[~np.isnan(choose_pc[:,2])]
+
+        meanarr, comparr, _ = cv2.PCACompute2(choose_pc, mean=None)
+
+        comparr = -comparr
+        if comparr[2, 2] < 0:
+            comparr[2, :3] = -comparr[2, :3]
+                    
+        # Target Pose 생성
+        target_pose = np.identity(4)
+        target_pose[:3,:3] = comparr.T # rotation
+        target_pose[:3,3] = meanarr # transration
+
+        roll, pitch, yaw = self.euler_from_matrix(rot=target_pose[:3,:3], degree=False)
+
+        return roll, pitch, yaw
+

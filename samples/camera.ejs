@@ -101,22 +101,10 @@
                 }
             }, 150);        
     }
-    // webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
-    //   if (webSocket.readyState === webSocket.OPEN) {
-
-    //     webSocket.send(client_id + canvas.toDataURL('image/jpeg', 0.3));
-    //     // draw_context.drawImage(draw_dummy_image, 0, 0);
-    //   }
-    // }, 50           );
-
-
-
 
     webSocket.onmessage = function(message){
         draw_dummy_image.src = message.data;    
         render_context();
-        
-        // draw_context.drawImage(draw_dummy_image, 0, 0);  
     };
          
     
@@ -140,22 +128,12 @@
     }
 
     // 웹에서 카메라 사용을 위한 스트림 생성
-    function stream() {
-        // navigator.getUserMedia(
-        //     {video: {facingMode: (front_camera ? "user" : "environment"),
-        //             width: camera_resolution[0],
-        //             height: camera_resolution[1]}, audio: false},
-        //     function (stream){video.srcObject = stream; video.play()},
-        //     function (err){alert(err)}
-        // )
-        
-        
+    function stream() {        
         let constraints = {
             audio: false,
             video: video
         };
     
-        
         navigator.mediaDevices.getUserMedia(constraints).then(stream => {
             stream.getVideoTracks().forEach(track => {
                 //console.log(track);
@@ -171,8 +149,7 @@
     }
 
     async function render_video(){
-         context.drawImage(videoElement, 0, 0);
-         
+         context.drawImage(videoElement, 0, 0);    
          await requestAnimationFrame(render_video)
     }
 
@@ -180,6 +157,5 @@
         draw_context.drawImage(draw_dummy_image, 0, 0);  
         await requestAnimationFrame(render_context)
     }
-
 </script>
 </html>

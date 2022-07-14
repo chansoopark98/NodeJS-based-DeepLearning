@@ -82,10 +82,10 @@ class TCPServer():
             self.ssl_context = None
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
-                                             max_size=100000,
-                                             max_queue=128,
+                                             max_size=80000,
+                                             max_queue=1,
                                              read_limit=2**20,
-                                             write_limit=2**20)
+                                             write_limit=2**8)
         asyncio.get_event_loop().run_until_complete(self.start_server)
         asyncio.get_event_loop().run_forever()
         

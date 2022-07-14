@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(45, 1280 / 960, 1, 1000);
+// w: 480 h: 640
+var camera = new THREE.PerspectiveCamera(45, 480 / 640, 1, 1000);
 
 //var renderer = new THREE.WebGLRenderer();
 var renderer = new THREE.WebGLRenderer( { canvas: render_area, alpha: true, preserveDrawingBuffer:true  } );
-renderer.setSize(1280, 960);
+renderer.setSize(480, 640);
 //document.body.appendChild(renderer.domElement);
 
 var geometry = new THREE.SphereGeometry(3, 15, 32, 16, Math.PI * 2, 0, Math.PI * 2);
@@ -37,7 +38,6 @@ sphere[2].material.color.setHex(hex);
 
 
 var render = function() {
-  console.log('render!');
   requestAnimationFrame(render);
   renderer.render(scene, camera);
 };

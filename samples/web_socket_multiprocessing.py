@@ -7,14 +7,13 @@ import base64
 import time
 from dl_model.model_builder import SemanticModel
 import tensorflow as tf
-import multiprocessing
 from websockets.extensions import permessage_deflate
-import wsaccel
 import concurrent.futures
-client_num = 1
-wsaccel.patch_autobahn
 
-class TCPServer():
+client_num = 1
+
+
+class TCPServer(SemanticModel):
     def __init__(self, hostname, port, cert_dir, key_dir):
         super().__init__()
         self.hostname = hostname
@@ -22,16 +21,10 @@ class TCPServer():
         self.cert_dir = cert_dir
         self.key_dir = key_dir
         self.loop = asyncio.new_event_loop()
+        
 
-    async def rcv_data(self, data, gpu_name):
-        data = data[0].split(',')
-        client_id = data[0]
-        data_type = data[1]
-        base64_data = data[2]
-
-        if len(base64_data) % 4:
-            # 4의 배수가 아니면 패딩
-            base64_data += '=' * (4 - len(base64_data) % 4)
+    def rcv_data(self, data, gpu_name, usr_id):
+        base64_data = data[0]
 
         imgdata = base64.b64decode(base64_data)
         image = np.frombuffer(imgdata, np.uint8)
@@ -39,20 +32,23 @@ class TCPServer():
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         start = time.process_time()
-        # output = self.model_predict(image=image, gpu_name=gpu_name)
+        output = self.model_predict(image=image, gpu_name=gpu_name)
+        roll,pitch,yaw = self.calc_pca(img=image, mask=output)
+        print(roll, pitch, yaw)
         duration = (time.process_time() - start)
-        # print("id: {0}, time: {1}".format(client_id, duration))
+        print("time: {0}".format(duration))
 
-        cv2.imshow(str(client_id), image)
+        cv2.imshow(usr_id, image)
         cv2.waitKey(1)
         
         encode_image = cv2.imencode('.jpeg', image)
+        
         encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
         encode_image = 'data:image/jpeg;base64' + ',' + encode_image
         
         
         
-        return client_id, encode_image
+        return usr_id, encode_image
 
     async def loop_logic(self, websocket):
         global client_num
@@ -60,29 +56,26 @@ class TCPServer():
             gpu_name = '/device:GPU:0'
         else:
             gpu_name = '/device:GPU:1'
-
+        usr_id = str(client_num)
         print('client_num : {0},  gpu_num{1}'.format(client_num, gpu_name))
         client_num += 1
-        # tf.debugging.set_log_device_placement(True)
+    
+        while True:
+            try:
+                # Wait data from client
+                data = await asyncio.gather(websocket.recv())
+                client_id, rcv_data = self.rcv_data(data=data, gpu_name=gpu_name, usr_id=usr_id)
+                
+                await websocket.send(rcv_data)
+                
 
-        with tf.device(gpu_name):
-            while True:
-                try:
-                    # Wait data from client
-                    data = await asyncio.gather(websocket.recv())
-                    client_id, rcv_data = await self.rcv_data(data=data, gpu_name=gpu_name)
-                    
-                    await websocket.send(rcv_data)
-                    
-                    # buffer = collections.deque
-                    # buffer.clear()
-                    
-
-                except Exception as e:
-                    print('Log : {0}'.format(e))
-                    cv2.destroyWindow(str(client_id))
-                    break
-                    # websocket.close()
+            except Exception as e:
+                client_num -= 1
+                websocket.close()
+                print('Log error : {0}'.format(e))
+                cv2.destroyWindow(client_id)
+                break
+                
 
     
     async def run_server(self):
@@ -96,14 +89,10 @@ class TCPServer():
                                              max_size=100000,
                                              max_queue=4,
                                              read_limit=2**16,
-                                             write_limit=2**15,
-                                             extensions=[
-        permessage_deflate.ServerPerMessageDeflateFactory(
-            server_max_window_bits=15,
-            client_max_window_bits=15,
-            compress_settings={"memLevel": 9},
-        ),
-    ],)
+                                             write_limit=2**15)
+
+        # asyncio.get_event_loop().run_until_complete(self.start_server)
+        # asyncio.get_event_loop().run_forever()
         
         async with self.start_server:
             print(self.start_server)
@@ -125,6 +114,8 @@ if __name__ == "__main__":
         cert_dir = '../cert.pem',
         key_dir = '../privkey.pem'
     )
+
+    # server.run_server()
     with concurrent.futures.ProcessPoolExecutor() as pool:
             server.loop.run_in_executor(pool, asyncio.run(server.run_server()))
             
