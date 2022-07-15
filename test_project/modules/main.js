@@ -1,4 +1,4 @@
-import { render } from "./three_test.js";
+import { render, get_world_coords } from "./three_test.js";
 
 console.log('main.js init');
 // var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
@@ -13,13 +13,22 @@ let height = 640;    // 해상도 (높이)
 let camera_resolution = [width, height];     // 해상도
 const fps = 30;      //FPS
 const capture_time = 1000;  // 캡쳐 시간
+
+// var render_canvas = document.getElementById("render_area");
+// render_canvas.width = width;
+// render_canvas.height = height;
 const canvas = document.createElement("canvas");
 var startButton = document.getElementById("start-button");
 startButton.onclick = startEvent;
 let context = canvas.getContext('2d');
-
-var draw_dummy_image = new Image(480, 640)
-let image_src;
+var center_x = 0;
+var center_y = 0;
+var roll = 0;
+var pitch = 0;
+var yaw = 0;
+var area = 0;
+var w = 0;
+var h = 0;
 const videoElement = document.querySelector('video');
 videoElement.addEventListener('canplaythrough', render_video);
 
@@ -34,7 +43,17 @@ function startEvent() {
 }
 
 webSocket.onmessage = function(message){
-    // draw_dummy_image.src = message.data;    
+    var recv_data = message.data.split(',');
+    center_x = recv_data[0];
+    center_y = recv_data[1];
+    roll = recv_data[2];
+    pitch = recv_data[3];
+    yaw = recv_data[4];
+    area = recv_data[5];
+    w = recv_data[6];
+    h = recv_data[7];
+    // console.log(center_x, center_y);
+    get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h)
 };
         
 
@@ -48,6 +67,7 @@ function onLoad() {
     video.height = height;
     canvas.width = width;
     canvas.height = height;
+    
     // canvas.style.visibility = 'hidden';
     // canvas.style.display='none';
     stream();
@@ -76,7 +96,7 @@ function stream() {
 
 async function render_video(){
     context.drawImage(videoElement, 0, 0);  
-    render();
+    render(center_x, center_y, roll, pitch, yaw);
     await requestAnimationFrame(render_video)
 }
 

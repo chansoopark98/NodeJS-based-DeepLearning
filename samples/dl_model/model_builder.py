@@ -61,11 +61,15 @@ class SemanticModel():
         preds = self.infer(image)
         pred_output = preds['output']
         output = tf.argmax(pred_output, axis=-1)
+        output = output[0]
+        output = tf.expand_dims(output, axis=-1)
+        
         
         
         output = tf.image.resize(output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        output = output[0]
-        return output.numpy().astype(np.uint8) * 127
+        
+        
+        return output[:, :, 0].numpy().astype(np.uint8) * 127
 
 
     def euler_from_matrix(self, rot, degree=False ):
@@ -88,15 +92,19 @@ class SemanticModel():
 
         # Get display area
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        tmp = 0
-        display_contours = []
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area > tmp: 
-                tmp = area
-                display_contours.append(contour)
+        display_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+        # tmp = 0
+        # display_contours = []
+        # for contour in contours:
+        #     area = cv2.contourArea(contour)
+        #     if area > tmp: 
+        #         tmp = area
+        #         display_contours.append(contour)
                 
         x,y,w,h = cv2.boundingRect(display_contours[0])
+        area = cv2.contourArea(display_contours[0])
+
+        print(area)
 
         depth_map = np.ones((img.shape[0], img.shape[1], 1), np.float32)
         depth_map[y:y+h, x:x+w] *= 300.
@@ -114,8 +122,8 @@ class SemanticModel():
 
         xyz_load = np.asarray(pcd.points)
  
-        pc = np.zeros((img_w, img_h, 3))
-        xyz_load = np.reshape(xyz_load, (img_w, img_h, 3))
+        pc = np.zeros((img_h, img_w, 3))
+        xyz_load = np.reshape(xyz_load, (img_h, img_w, 3))
         pc[:,:,0] = xyz_load[:, :, 0]
         pc[:,:,1] = xyz_load[:, :, 1]
         pc[:,:,2] = xyz_load[:, :, 2]
@@ -125,7 +133,7 @@ class SemanticModel():
         
         choose_pc = pc[center_y-1:center_y+1, center_x-1:center_x+1]
 
-        pointCloud_area = np.zeros((img_w, img_h), dtype=np.uint8)
+        pointCloud_area = np.zeros((img_h, img_w), dtype=np.uint8)
         pointCloud_area = cv2.line(pointCloud_area, (center_x-1, center_y-1), (center_x+1, center_y+1), 255, 10, cv2.LINE_AA)
         choose_pc = pc[np.where(pointCloud_area[:, :]==255)]
                     
@@ -144,5 +152,5 @@ class SemanticModel():
 
         roll, pitch, yaw = self.euler_from_matrix(rot=target_pose[:3,:3], degree=False)
 
-        return roll, pitch, yaw
+        return center_x, center_y, roll, pitch, yaw, area, w, h
 

@@ -30,22 +30,24 @@ class TCPServer(SemanticModel):
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+        
         start = time.process_time()
         output = self.model_predict(image=image, gpu_name=gpu_name)
-        roll,pitch,yaw = self.calc_pca(img=image, mask=output)
-        print(roll, pitch, yaw)
+        
+        center_x, center_y, roll, pitch, yaw, area, w, h = self.calc_pca(img=image, mask=output)
+        
         duration = (time.process_time() - start)
-        print("time: {0}".format(duration))
+        # print("time: {0}".format(duration))
+        
 
-        cv2.imshow(usr_id, image)
+        cv2.circle(output, (int(center_x), int(center_y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+        cv2.imshow(usr_id, output)
         cv2.waitKey(1)
         
-        encode_image = cv2.imencode('.jpeg', image)
-        
-        encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
-        encode_image = 'data:image/jpeg;base64' + ',' + encode_image
-        
+        encode_image = str(center_x) + ',' + str(center_y) + \
+            ',' + str(roll) + ',' + str(pitch) + ',' + str(yaw) + \
+            ',' + str(int(area)) + ',' + str(w) + ',' + str(h)
+
         
         
         return usr_id, encode_image
