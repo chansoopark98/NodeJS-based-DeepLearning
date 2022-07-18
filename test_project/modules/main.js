@@ -1,4 +1,5 @@
 import { render, get_world_coords } from "./three_test.js";
+import * as camera_util from "./camera.js";
 
 var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
 // var webSocket = new WebSocket("ws://127.0.0.1:7777");
@@ -34,7 +35,7 @@ videoElement.height = 640;
 function startEvent() {
     webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
         if (webSocket.readyState === webSocket.OPEN) {
-            var sendData = canvas.toDataURL('image/jpeg', 0.3)
+            var sendData = canvas.toDataURL('image/jpeg', 0.5)
             webSocket.send(sendData.split(",")[1]);
             }
         }, 150);        
@@ -59,7 +60,8 @@ function onLoad() {
     console.log('on load')
     canvas.width = width;
     canvas.height = height;
-    stream();
+    // stream();
+    camera_util.getCamera(videoElement);
 }
 
 // 웹에서 카메라 사용을 위한 스트림 생성

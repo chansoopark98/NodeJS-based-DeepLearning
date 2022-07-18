@@ -4,7 +4,7 @@ import * as THREE from 'three';
 const video = document.getElementById( 'video' );
 const texture = new THREE.VideoTexture( video );
 texture.needsUpdate = true;
-var material_video = new THREE.MeshBasicMaterial({ map: texture });
+var material_video = new THREE.MeshBasicMaterial({ map: texture , side: THREE.FrontSide});
 
 
 var scene = new THREE.Scene();
