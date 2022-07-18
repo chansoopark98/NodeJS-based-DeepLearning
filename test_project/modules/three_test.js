@@ -1,7 +1,13 @@
 import * as THREE from 'three';
 
+//Video Texture
+const video = document.getElementById( 'video' );
+const texture = new THREE.VideoTexture( video );
+texture.needsUpdate = true;
+var material_video = new THREE.MeshBasicMaterial({ map: texture });
+
+
 var scene = new THREE.Scene();
-// w: 480 h: 640
 var camera = new THREE.PerspectiveCamera(45, 480 / 640, 1, 1000);
 
 //var renderer = new THREE.WebGLRenderer();
@@ -11,7 +17,7 @@ renderer.setSize(480, 640);
 
 const geometry = new THREE.BoxGeometry(10, 10, 10); // width, height, depth
 const material = new THREE.MeshLambertMaterial({ color: 0x1ec876 });
-const mesh = new THREE.Mesh(geometry, material);
+const mesh = new THREE.Mesh(geometry, material_video);
 
 
 
@@ -57,22 +63,24 @@ function get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h){
   
   var width = parseFloat(w);
   var height = parseFloat(h);
-  if (width > height){
-    var width_factor = width / height;
-    var height_factor = 1;
-
-  }
-  else{
-    var width_factor = 1;
-    var height_factor = width / height;
-  }
+  
+  var width_factor = width / height;
+  var height_factor = height / width;
   // area 50000
   
   var scale_factor = parseInt(parseFloat(area) / 10000);
   
   if (scale_factor != 0){
-    var width_scale = (1 + (0.1 * scale_factor)) * width_factor
-    var height_scale = (1 +(0.1 * scale_factor)) * height_factor
+    var width_scale = (1 + (0.2 * scale_factor)) * width_factor
+    var height_scale = (1 +(0.2 * scale_factor)) * height_factor
+    // console.log('width', width);
+    // console.log('height', height);
+    // console.log('scale_factor', scale_factor);
+    // console.log('width_factor', width_factor);
+    // console.log('height_factor', height_factor);
+    // console.log('width_scale', width_scale);
+    // console.log('height_scale', height_scale);
+    
     mesh.scale.set(width_scale, height_scale, 1);
     
   }
@@ -80,6 +88,7 @@ function get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h){
     mesh.scale.set(1, 1, 1);
   }
 
+  // mesh.scale.set(1.5, 1.5, 1);
 
 }
   

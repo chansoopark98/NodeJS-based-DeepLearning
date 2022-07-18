@@ -49,9 +49,9 @@ html, body {
 	top: 0;
 	left: 0;
 	display: block;
-	/* width: 100% !important; */
-	/* height: 100% !important; */
-	/* object-fit: cover; */
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover;
 }
 
 #render_area {
@@ -60,16 +60,16 @@ html, body {
 	top: 0;
 	z-index: 100;
 	display: block;
-	/* width: 100% !important; */
-	/* height: 100% !important; */
-	/* object-fit: cover; */
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover;
 }
 
 button {
 	/* margin-right: 5rem; */
 	position: relative;
-	top: 1000px;
-	left: 150px;
+	/* top: 1000px; */
+	/* left: 150px; */
 	z-index: 101;
 	width: 50%;
 	height: 10%;

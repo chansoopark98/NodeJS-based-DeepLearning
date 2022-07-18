@@ -30,7 +30,7 @@ class TCPServer(SemanticModel):
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        print(image.shape)
+        
         start = time.process_time()
         output = self.model_predict(image=image, gpu_name=gpu_name)
         
@@ -41,7 +41,12 @@ class TCPServer(SemanticModel):
         
 
         cv2.circle(output, (int(center_x), int(center_y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
-        cv2.imshow(usr_id, output)
+        output = cv2.cvtColor(output, cv2.COLOR_GRAY2BGR)
+
+        print(image.shape)
+        print("image shape : {0}, \n mask shape : {1}".format(image.shape, output.shape))
+        image = cv2.hconcat([image, output])
+        cv2.imshow(usr_id, image)
         cv2.waitKey(1)
         
         encode_image = str(center_x) + ',' + str(center_y) + \
@@ -103,7 +108,7 @@ class TCPServer(SemanticModel):
         
 
 if __name__ == "__main__":
-    use_local = True
+    use_local = False
 
     if use_local:
         hostname = '127.0.0.1'
