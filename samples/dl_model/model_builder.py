@@ -4,6 +4,7 @@ import numpy as np
 import open3d as o3d
 import cv2
 import math
+import matplotlib.pyplot as plt
 
 def classifier(x, num_classes=19, upper=4, name=None):
     x = tf.keras.layers.Conv2D(num_classes,
@@ -20,13 +21,12 @@ def classifier(x, num_classes=19, upper=4, name=None):
 class SemanticModel():
     def __init__(self):
         self.image_size = (320, 240)
-        # tf.config.set_soft_device_placement(True)
         self.load_model()
         self.warm_up()
     
     def load_model(self):
         converted_model_path = '/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt/1/'
-    
+
         print('load_model')
         seg_model = tf.saved_model.load(converted_model_path, tags=[tag_constants.SERVING])
     
@@ -36,12 +36,13 @@ class SemanticModel():
 
     def warm_up(self):
         dummy_data = tf.zeros((1, self.image_size[0], self.image_size[1],3))
-    
+
         with tf.device('/device:GPU:0'):
             pred_seg = self.infer(dummy_data)
             _ = pred_seg['output']
             print('gpu 0 warm up')
         with tf.device('/device:GPU:1'):
+            
             pred_seg = self.infer(dummy_data)
             _ = pred_seg['output']
             print('gpu 1 warm up')
@@ -49,11 +50,12 @@ class SemanticModel():
     
     def model_predict(self, image, gpu_name):
         # with tf.device(gpu_name):
-        shape = image.shape
-            
-        image = tf.image.resize(image, size=(self.image_size[0], self.image_size[1]),
-            method=tf.image.ResizeMethod.BILINEAR)
         
+        shape = image.shape
+                
+        image = tf.image.resize(image, size=(self.image_size[0], self.image_size[1]),
+                method=tf.image.ResizeMethod.BILINEAR)
+            
         image = tf.cast(image, tf.float32)
         image = tf.expand_dims(image, axis=0)
         image /= 255.
@@ -64,11 +66,9 @@ class SemanticModel():
         output = output[0]
         output = tf.expand_dims(output, axis=-1)
         
-        
-        
         output = tf.image.resize(output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-        
-        
+
+    
         return output[:, :, 0].numpy().astype(np.uint8) * 127
 
 
@@ -93,21 +93,18 @@ class SemanticModel():
         # Get display area
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         display_contours = sorted(contours, key=cv2.contourArea, reverse=True)
-        # tmp = 0
-        # display_contours = []
-        # for contour in contours:
-        #     area = cv2.contourArea(contour)
-        #     if area > tmp: 
-        #         tmp = area
-        #         display_contours.append(contour)
                 
         x,y,w,h = cv2.boundingRect(display_contours[0])
         area = cv2.contourArea(display_contours[0])
 
         print(area)
 
-        depth_map = np.ones((img.shape[0], img.shape[1], 1), np.float32)
-        depth_map[y:y+h, x:x+w] *= 300.
+        depth_map = np.ones((img.shape[0], img.shape[1]), np.float32)
+        depth_map = np.where(mask>=1., depth_map * 300, depth_map)
+        depth_map = np.expand_dims(depth_map, axis=-1)
+        
+        # depth_map[y:y+h, x:x+w] *= 300.
+        
 
         open3d_rgb = o3d.geometry.Image(img)
         pred_depth = o3d.geometry.Image(depth_map)
@@ -131,10 +128,12 @@ class SemanticModel():
         center_x = x + (w//2)
         center_y = y + (h//2)
         
-        choose_pc = pc[center_y-1:center_y+1, center_x-1:center_x+1]
+        # choose_pc = pc[center_y-1:center_y+1, center_x-1:center_x+1]
+        choose_pc = pc[y:y+h, x:x+w]
 
         pointCloud_area = np.zeros((img_h, img_w), dtype=np.uint8)
-        pointCloud_area = cv2.line(pointCloud_area, (center_x-1, center_y-1), (center_x+1, center_y+1), 255, 10, cv2.LINE_AA)
+        # pointCloud_area = cv2.line(pointCloud_area, (center_x-1, center_y-1), (center_x+1, center_y+1), 255, 10, cv2.LINE_AA)
+        pointCloud_area = np.where(mask>=1., 255, pointCloud_area)
         choose_pc = pc[np.where(pointCloud_area[:, :]==255)]
                     
         choose_pc = choose_pc[~np.isnan(choose_pc[:,2])]

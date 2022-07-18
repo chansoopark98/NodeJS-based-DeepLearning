@@ -30,7 +30,7 @@ class TCPServer(SemanticModel):
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
+        print(image.shape)
         start = time.process_time()
         output = self.model_predict(image=image, gpu_name=gpu_name)
         
