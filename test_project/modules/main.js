@@ -33,6 +33,7 @@ console.log(videoElement.videoWidth, videoElement.videoHeight);
 videoElement.width = 720;
 videoElement.height = 1280;
 
+
 function startEvent() {
     visible_flag = !visible_flag;
     console.log(visible_flag);
@@ -68,6 +69,10 @@ function onLoad() {
     canvas.width = width;
     canvas.height = height;
     camera_util.getCamera(videoElement);
+    // const streamImg = document.createElement("img");
+    // streamImg.src = "https://park-tdl.tspxr.ml:4447/stream?src=0";
+    // streamImg.id = 'test';
+    // streamImg.style = "display: none;";
 }
 
 async function render_video(){

@@ -3,8 +3,25 @@ import * as THREE from 'three';
 var camera_width = 720; // 480
 var camera_height = 1280; // 640
 //Video Texture
-const video = document.getElementById( 'show_video' );
-const texture = new THREE.VideoTexture( video );
+
+// const video = document.getElementById( 'video' );
+// const texture = new THREE.VideoTexture( video );
+
+{/* <img id="test" src="https://park-tdl.tspxr.ml:4447/stream?src=0" crossorigin="anonymous"></img> */}
+
+
+const video_img = document.getElementById( 'test' );
+const texture = new THREE.Texture(video_img);
+
+
+// texture.setCrossOrigin("anonymous");
+
+// const textureLoader = new THREE.TextureLoader()
+// textureLoader.crossOrigin = "Anonymous"
+// const texture = textureLoader.load(video_img)
+
+
+
 texture.needsUpdate = true;
 const material_video = new THREE.MeshBasicMaterial({ map: texture , }); //side: THREE.FrontSide
 const mat2 = new THREE.MeshBasicMaterial({color: 0x000000});

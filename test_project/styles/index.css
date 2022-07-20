@@ -52,7 +52,13 @@ html, body {
 	width: 100% !important;
 	height: 100% !important;
 	object-fit: cover;
+	
 }
+/* 
+#test{
+	z-index: 101;
+	
+} */
 
 #render_area {
 	position: absolute;
@@ -63,6 +69,7 @@ html, body {
 	width: 100% !important;
 	height: 100% !important;
 	object-fit: cover;
+	
 }
 
 button {
