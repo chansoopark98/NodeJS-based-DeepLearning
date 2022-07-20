@@ -21,6 +21,7 @@ def classifier(x, num_classes=19, upper=4, name=None):
 class SemanticModel():
     def __init__(self):
         self.image_size = (320, 240)
+        self.num_classes = 2
         self.load_model()
         self.warm_up()
     
@@ -62,14 +63,17 @@ class SemanticModel():
 
         preds = self.infer(image)
         pred_output = preds['output']
-        output = tf.argmax(pred_output, axis=-1)
-        output = output[0]
-        output = tf.expand_dims(output, axis=-1)
-        
-        output = tf.image.resize(output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
+        semantic_output = pred_output[0, :, :, :self.num_classes]
+        # confidence_output = pred_output[0, :, :, self.num_classes:]
+
+        semantic_output = tf.argmax(semantic_output, axis=-1)
+        semantic_output = tf.expand_dims(semantic_output, axis=-1)
+        
+        semantic_output = tf.image.resize(semantic_output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        semantic_output *= 127
     
-        return output[:, :, 0].numpy().astype(np.uint8) * 127
+        return semantic_output[:, :, 0].numpy().astype(np.uint8)
 
 
     def euler_from_matrix(self, rot, degree=False ):

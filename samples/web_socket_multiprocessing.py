@@ -37,14 +37,14 @@ class TCPServer(SemanticModel):
         center_x, center_y, roll, pitch, yaw, area, w, h = self.calc_pca(img=image, mask=output)
         
         duration = (time.process_time() - start)
-        # print("time: {0}".format(duration))
+        print("time: {0}".format(duration))
         
 
         cv2.circle(output, (int(center_x), int(center_y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
         output = cv2.cvtColor(output, cv2.COLOR_GRAY2BGR)
 
-        print(image.shape)
-        print("image shape : {0}, \n mask shape : {1}".format(image.shape, output.shape))
+        
+        
         image = cv2.hconcat([image, output])
         cv2.imshow(usr_id, image)
         cv2.waitKey(1)
