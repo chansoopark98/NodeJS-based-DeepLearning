@@ -25,6 +25,8 @@ class Streamer :
         self.Q = Queue(maxsize=128)
         self.started = False
         
+    # https://stackoverflow.com/questions/57314357/streaming-video-files-using-flask
+    # video streaming test
     def run(self, src = 0 ) :
         
         self.stop()
