@@ -23,39 +23,43 @@ class TCPServer(SemanticModel):
         self.loop = asyncio.new_event_loop()
         
 
-    def rcv_data(self, data, gpu_name, usr_id):
+    async def rcv_data(self, data, gpu_name, usr_id, websocket):
         base64_data = data[0]
 
         imgdata = base64.b64decode(base64_data)
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         start = time.process_time()
         output = self.model_predict(image=image, gpu_name=gpu_name)
         
-        center_x, center_y, roll, pitch, yaw, area, w, h = self.calc_pca(img=image, mask=output)
         
-        duration = (time.process_time() - start)
-        print("time: {0}".format(duration))
-        
+        calc_pca = self.calc_pca(img=image, mask=output)
+        if len(calc_pca) != 0:
+            center_x, center_y, roll, pitch, yaw, area, w, h = calc_pca
+            
+            duration = (time.process_time() - start)
+            # print("time: {0}".format(duration))
+            
 
-        cv2.circle(output, (int(center_x), int(center_y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
-        output = cv2.cvtColor(output, cv2.COLOR_GRAY2BGR)
+            cv2.circle(output, (int(center_x), int(center_y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+            output = cv2.cvtColor(output, cv2.COLOR_GRAY2BGR)
 
-        
-        
-        image = cv2.hconcat([image, output])
-        cv2.imshow(usr_id, image)
-        cv2.waitKey(1)
-        
-        encode_image = str(center_x) + ',' + str(center_y) + \
-            ',' + str(roll) + ',' + str(pitch) + ',' + str(yaw) + \
-            ',' + str(int(area)) + ',' + str(w) + ',' + str(h)
+            
+            image = cv2.hconcat([image, output])
 
-        
-        
-        return usr_id, encode_image
+            cv2.imshow(usr_id, image)
+            cv2.waitKey(1)
+
+            encode_image = str(center_x) + ',' + str(center_y) + \
+                ',' + str(roll) + ',' + str(pitch) + ',' + str(yaw) + \
+                ',' + str(int(area)) + ',' + str(w) + ',' + str(h)
+
+            
+            await websocket.send(encode_image)
+    # return usr_id, encode_image
 
     async def loop_logic(self, websocket):
         global client_num
@@ -71,16 +75,16 @@ class TCPServer(SemanticModel):
             try:
                 # Wait data from client
                 data = await asyncio.gather(websocket.recv())
-                client_id, rcv_data = self.rcv_data(data=data, gpu_name=gpu_name, usr_id=usr_id)
+                await self.rcv_data(data=data, gpu_name=gpu_name, usr_id=usr_id, websocket=websocket)
                 
-                await websocket.send(rcv_data)
+                # await websocket.send(rcv_data)
                 
 
             except Exception as e:
                 client_num -= 1
                 websocket.close()
                 print('Log error : {0}'.format(e))
-                cv2.destroyWindow(client_id)
+                cv2.destroyWindow(usr_id)
                 break
                 
 

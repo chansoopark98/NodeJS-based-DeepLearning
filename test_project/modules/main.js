@@ -38,7 +38,7 @@ function startEvent() {
             var sendData = canvas.toDataURL('image/jpeg', 0.5)
             webSocket.send(sendData.split(",")[1]);
             }
-        }, 150);        
+        }, 100);        
 }
 
 webSocket.onmessage = function(message){

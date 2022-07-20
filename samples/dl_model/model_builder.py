@@ -96,12 +96,14 @@ class SemanticModel():
 
         # Get display area
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if len(contours) == 0:
+            return []
+
         display_contours = sorted(contours, key=cv2.contourArea, reverse=True)
                 
         x,y,w,h = cv2.boundingRect(display_contours[0])
         area = cv2.contourArea(display_contours[0])
-
-        print(area)
 
         depth_map = np.ones((img.shape[0], img.shape[1]), np.float32)
         depth_map = np.where(mask>=1., depth_map * 300, depth_map)
@@ -122,7 +124,7 @@ class SemanticModel():
                 o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault))
 
         xyz_load = np.asarray(pcd.points)
- 
+
         pc = np.zeros((img_h, img_w, 3))
         xyz_load = np.reshape(xyz_load, (img_h, img_w, 3))
         pc[:,:,0] = xyz_load[:, :, 0]
@@ -155,5 +157,4 @@ class SemanticModel():
 
         roll, pitch, yaw = self.euler_from_matrix(rot=target_pose[:3,:3], degree=False)
 
-        return center_x, center_y, roll, pitch, yaw, area, w, h
-
+        return [center_x, center_y, roll, pitch, yaw, area, w, h]
