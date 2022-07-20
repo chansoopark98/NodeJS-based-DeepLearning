@@ -1,23 +1,30 @@
 import * as THREE from 'three';
 
+var camera_width = 720; // 480
+var camera_height = 1280; // 640
 //Video Texture
-const video = document.getElementById( 'video' );
+const video = document.getElementById( 'show_video' );
 const texture = new THREE.VideoTexture( video );
 texture.needsUpdate = true;
-var material_video = new THREE.MeshBasicMaterial({ map: texture , side: THREE.FrontSide});
-
+const material_video = new THREE.MeshBasicMaterial({ map: texture , }); //side: THREE.FrontSide
+const mat2 = new THREE.MeshBasicMaterial({color: 0x000000});
+const mat3 = new THREE.MeshBasicMaterial({color: 0x000000});
+const mat4 = new THREE.MeshBasicMaterial({color: 0x000000});
+const mat5 = new THREE.MeshBasicMaterial({color: 0x000000});
+const mat6 = new THREE.MeshBasicMaterial({color: 0x000000})
+var materials = [mat2, mat3, mat4, mat5, material_video, mat6]
 
 var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera(45, 480 / 640, 1, 1000);
+var camera = new THREE.PerspectiveCamera(45, camera_width / camera_height, 1, 1000);
 
 //var renderer = new THREE.WebGLRenderer();
 var renderer = new THREE.WebGLRenderer( { canvas: render_area, alpha: true, preserveDrawingBuffer:true  } );
-renderer.setSize(480, 640);
+renderer.setSize(camera_width, camera_height);
 //document.body.appendChild(renderer.domElement);
 
 const geometry = new THREE.BoxGeometry(10, 10, 10); // width, height, depth
 const material = new THREE.MeshLambertMaterial({ color: 0x1ec876 });
-const mesh = new THREE.Mesh(geometry, material_video);
+const mesh = new THREE.Mesh(geometry, materials);
 
 
 
@@ -42,8 +49,8 @@ var vec = new THREE.Vector3(); // create once and reuse
 function get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h){
   var pos = new THREE.Vector3(); // create once and reuse
   vec.set(
-    ( center_x / 480 ) * 2 - 1,
-    - ( center_y / 640 ) * 2 + 1,
+    ( center_x / camera_width ) * 2 - 1,
+    - ( center_y / camera_height ) * 2 + 1,
     0.5 );
 
   vec.unproject(camera);
@@ -93,33 +100,11 @@ function get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h){
 }
   
 
-var render = function(center_x, center_y) {
-
-  // vec.set(
-  //     ( center_x / 480 ) * 2 - 1,
-  //     - ( center_y / 640 ) * 2 + 1,
-  //     0.5 );
-
-  // // console.log(vec);
-
-  // vec.unproject( camera );
-
-  // vec.sub( camera.position ).normalize();
-
-  // var distance = - camera.position.z / vec.z;
-
-  // pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
-
-
-  // convert x,y to clip space; coords from top left, clockwise:
-  // (-1,1), (1,1), (-1,-1), (1, -1)
-
-
-
-
-
-  // requestAnimationFrame(render);
+var render = function(visible_flag) {
+  mesh.visible=visible_flag;
+  
   renderer.render(scene, camera);
+  requestAnimationFrame(render);
 };
 
 export {render, get_world_coords}

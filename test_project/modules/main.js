@@ -6,8 +6,8 @@ var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
 
 // 카메라 세팅 부분
 let front_camera = false    // 전면 카메라 사용 유무
-let width = 480;     // 해상도 (너비)
-let height = 640;    // 해상도 (높이)
+let width = 720;      // 해상도 (너비) 480
+let height = 1280;    // 해상도 (높이) 640
 
 // var render_canvas = document.getElementById("render_area");
 // render_canvas.width = width;
@@ -15,6 +15,7 @@ let height = 640;    // 해상도 (높이)
 const canvas = document.createElement("canvas");
 var startButton = document.getElementById("start-button");
 startButton.onclick = startEvent;
+var visible_flag = false;
 let context = canvas.getContext('2d');
 var center_x = 0;
 var center_y = 0;
@@ -29,17 +30,23 @@ var h = 0;
 var videoElement = document.getElementById('video');
 videoElement.addEventListener('canplaythrough', render_video);
 console.log(videoElement.videoWidth, videoElement.videoHeight);
-videoElement.width = 480;
-videoElement.height = 640;
+videoElement.width = 720;
+videoElement.height = 1280;
 
 function startEvent() {
-    webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
-        if (webSocket.readyState === webSocket.OPEN) {
+    visible_flag = !visible_flag;
+    console.log(visible_flag);
+
+}
+
+webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
+    if (webSocket.readyState === webSocket.OPEN) {
+        if (visible_flag == true) {
             var sendData = canvas.toDataURL('image/jpeg', 0.5)
             webSocket.send(sendData.split(",")[1]);
-            }
-        }, 100);        
-}
+        }
+    }
+}, 100);
 
 webSocket.onmessage = function(message){
     var recv_data = message.data.split(',');
@@ -60,36 +67,12 @@ function onLoad() {
     console.log('on load')
     canvas.width = width;
     canvas.height = height;
-    // stream();
     camera_util.getCamera(videoElement);
 }
 
-// 웹에서 카메라 사용을 위한 스트림 생성
-function stream() {
-    let constraints = {
-        audio: false,
-        video: {facingMode: (front_camera ? "user" : "environment")}
-        
-    };
-    navigator.mediaDevices.getUserMedia(constraints).then(stream => {
-        stream.getVideoTracks().forEach(track => {
-            const capabilities = track.getCapabilities
-            console.log(track.getSettings());
-            console.log('focus distance', capabilities.focusDistance);
-
-        });
-        
-        video.srcObject = stream;
-        video.addEventListener("loadedmetadata", () => {
-            video.play();
-            reserve(true, stream);
-        });
-    }).catch("Open camera failed!");
-}
-
 async function render_video(){
-    context.drawImage(videoElement, 0, 0, 480, 640);  
-    render(center_x, center_y, roll, pitch, yaw);
+    context.drawImage(videoElement, 0, 0, 720, 1280);  
+    render(visible_flag);
     await requestAnimationFrame(render_video)
 }
 

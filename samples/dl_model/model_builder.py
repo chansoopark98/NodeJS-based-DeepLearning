@@ -65,7 +65,11 @@ class SemanticModel():
         pred_output = preds['output']
 
         semantic_output = pred_output[0, :, :, :self.num_classes]
-        # confidence_output = pred_output[0, :, :, self.num_classes:]
+
+        confidence_output = pred_output[0, :, :, self.num_classes:]
+        
+        confidence_output *= 255.
+        print(confidence_output.shape)
 
         semantic_output = tf.argmax(semantic_output, axis=-1)
         semantic_output = tf.expand_dims(semantic_output, axis=-1)
@@ -73,7 +77,7 @@ class SemanticModel():
         semantic_output = tf.image.resize(semantic_output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         semantic_output *= 127
     
-        return semantic_output[:, :, 0].numpy().astype(np.uint8)
+        return semantic_output[:, :, 0].numpy().astype(np.uint8), confidence_output.numpy().astype(np.uint8)
 
 
     def euler_from_matrix(self, rot, degree=False ):
