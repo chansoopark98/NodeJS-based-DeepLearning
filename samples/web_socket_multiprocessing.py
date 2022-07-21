@@ -29,17 +29,17 @@ class TCPServer(SemanticModel):
         imgdata = base64.b64decode(base64_data)
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-        
+        image = cv2.resize(image, (240, 320))
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         start = time.process_time()
-        output, confidence_output= self.model_predict(image=image, gpu_name=gpu_name)
+        output = self.model_predict(image=image, gpu_name=gpu_name)
         
         
         calc_pca = self.calc_pca(img=image, mask=output)
         if len(calc_pca) != 0:
             center_x, center_y, roll, pitch, yaw, area, w, h = calc_pca
-
+    
             duration = (time.process_time() - start)
             # print("time: {0}".format(duration))
             
@@ -48,16 +48,38 @@ class TCPServer(SemanticModel):
             output = cv2.cvtColor(output, cv2.COLOR_GRAY2BGR)
 
             
-            image = cv2.hconcat([image, output])
+            # image = cv2.hconcat([image, output])
 
-            cv2.imshow(usr_id, confidence_output)
+            cv2.imshow(usr_id, output)
             cv2.waitKey(1)
 
-            encode_image = str(center_x) + ',' + str(center_y) + \
+            
+            # sift x coord
+            align_center_x = 240 // 2
+            if center_x >= align_center_x:
+                center_x -= int(w * 0.7)
+
+                if center_x <= 0:
+                    center_x = 0    
+
+            else:
+                center_x += int(w * 0.7)
+                
+                if center_x >= 240:
+                    center_x = 240
+            
+
+            # re-scale x,y coords
+            Rx = 720/240
+            Ry = 1280/320
+            rescale_center_x = round(Rx * center_x)
+            rescale_center_y = round(Ry * center_y)
+
+
+            encode_image = str(rescale_center_x) + ',' + str(rescale_center_y) + \
                 ',' + str(roll) + ',' + str(pitch) + ',' + str(yaw) + \
                 ',' + str(int(area)) + ',' + str(w) + ',' + str(h)
 
-            
             await websocket.send(encode_image)
     # return usr_id, encode_image
 

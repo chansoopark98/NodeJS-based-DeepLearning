@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="google" content="notranslate">
-    <meta name="theme-color" content="#005AAB">
+    <meta name="theme-color" content="#4383FA">
 
     <link rel="stylesheet" type="text/css" href="./styles/index.css"/>
 
@@ -23,13 +23,23 @@
     <!-- <script type="module" src="./modules/three_test.js"></script> -->
 </head>
 <body>
-    <div id="ar-container">
-      <video id="video"></video>
-      <canvas id="render_area" width="720" height="1280"></canvas>
-       <button id="start-button">START</button>
-       <!-- <video id="test" style="display: hidden;" src="https://park-tdl.tspxr.ml:4447/stream?src=0"></video> -->
-       <img id="test" crossorigin="anonymous" style="visibility: hidden;"></img>
-       
+    <div id="loading">
+        <img src="./assets/logo.png" />
+        <span class="loading-text">AR Test page</span>
+
+        <video id="video"></video>
+        <canvas id="render_area" width="720" height="1280"></canvas>
+        <button id="start-button">START</button>
+         <video id="test" hidden muted></video>
+         <!-- <video id="test" src="https://park-tdl.tspxr.ml:4447/video?src=0"  crossorigin="anonymous" 
+                  autoplay="autoplay" loop="loop" hidden></video> -->
+        
     </div>
+
+    <!-- <div id="ar-container"> -->
+
+       <!-- <img id="test" src="https://park-tdl.tspxr.ml:4447/stream?src=0" crossorigin="anonymous"></img> -->
+       
+    
 </body>
 </html>

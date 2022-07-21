@@ -18,10 +18,15 @@ def stream():
     src = request.args.get( 'src', default = 0, type = int )
     
     try :
-        
+        # mimetype='video/mp4',
+                        # content_type='video/mp4', direct_passthrough=True)
         return Response(
                                 stream_with_context( stream_gen( src ) ),
-                                mimetype='multipart/x-mixed-replace; boundary=frame' )
+                                mimetype='multipart/x-mixed-replace; boundary=frame')
+        
+        # return Response(
+        #                         stream_with_context( stream_gen( src ) ),
+        #                         mimetype='multipart/x-mixed-replace; boundary=frame' )
         
     except Exception as e :
         
@@ -29,13 +34,14 @@ def stream():
 
 def stream_gen( src ):   
   
-    try : 
+    try :
         
         streamer.run( src )
         
         while True :
             
             frame = streamer.bytescode()
+            
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
                     

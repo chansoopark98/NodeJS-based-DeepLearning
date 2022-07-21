@@ -54,8 +54,8 @@ class SemanticModel():
         
         shape = image.shape
                 
-        image = tf.image.resize(image, size=(self.image_size[0], self.image_size[1]),
-                method=tf.image.ResizeMethod.BILINEAR)
+        # image = tf.image.resize(image, size=(self.image_size[0], self.image_size[1]),
+        #         method=tf.image.ResizeMethod.BILINEAR)
             
         image = tf.cast(image, tf.float32)
         image = tf.expand_dims(image, axis=0)
@@ -67,17 +67,19 @@ class SemanticModel():
         semantic_output = pred_output[0, :, :, :self.num_classes]
 
         confidence_output = pred_output[0, :, :, self.num_classes:]
-        
-        confidence_output *= 255.
-        print(confidence_output.shape)
+        confidence_output = tf.where(confidence_output>=0.99, 1., 0.)
+        # confidence_output *= 255.
+        # print(confidence_output.shape)
 
+        semantic_output *= confidence_output
         semantic_output = tf.argmax(semantic_output, axis=-1)
+
         semantic_output = tf.expand_dims(semantic_output, axis=-1)
         
-        semantic_output = tf.image.resize(semantic_output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+        # semantic_output = tf.image.resize(semantic_output, size=(shape[0], shape[1]), method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         semantic_output *= 127
     
-        return semantic_output[:, :, 0].numpy().astype(np.uint8), confidence_output.numpy().astype(np.uint8)
+        return semantic_output[:, :, 0].numpy().astype(np.uint8)
 
 
     def euler_from_matrix(self, rot, degree=False ):
@@ -95,8 +97,8 @@ class SemanticModel():
             return roll, pitch, yaw
 
     def calc_pca(self, img, mask):
-        img_h = img.shape[0]
-        img_w = img.shape[1]
+        img_h = mask.shape[0]
+        img_w = mask.shape[1]
 
         # Get display area
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -109,7 +111,7 @@ class SemanticModel():
         x,y,w,h = cv2.boundingRect(display_contours[0])
         area = cv2.contourArea(display_contours[0])
 
-        depth_map = np.ones((img.shape[0], img.shape[1]), np.float32)
+        depth_map = np.ones((mask.shape[0], mask.shape[1]), np.float32)
         depth_map = np.where(mask>=1., depth_map * 300, depth_map)
         depth_map = np.expand_dims(depth_map, axis=-1)
         
@@ -151,6 +153,7 @@ class SemanticModel():
         meanarr, comparr, _ = cv2.PCACompute2(choose_pc, mean=None)
 
         comparr = -comparr
+        
         if comparr[2, 2] < 0:
             comparr[2, :3] = -comparr[2, :3]
                     
@@ -159,6 +162,6 @@ class SemanticModel():
         target_pose[:3,:3] = comparr.T # rotation
         target_pose[:3,3] = meanarr # transration
 
-        roll, pitch, yaw = self.euler_from_matrix(rot=target_pose[:3,:3], degree=False)
-
+        roll, pitch, yaw = self.euler_from_matrix(rot=target_pose[:3,:3], degree=True)
+        
         return [center_x, center_y, roll, pitch, yaw, area, w, h]

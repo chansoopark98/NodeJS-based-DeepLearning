@@ -9,16 +9,40 @@ var camera_height = 1280; // 640
 
 {/* <img id="test" src="https://park-tdl.tspxr.ml:4447/stream?src=0" crossorigin="anonymous"></img> */}
 
+{/* <video id="test" src="https://park-tdl.tspxr.ml:4447/video?src=0"  crossorigin="anonymous"  */}
+                  // autoplay="autoplay"></video>
+
+
+// const video = document.createElement('video');
+
 
 const video_img = document.getElementById( 'test' );
-const texture = new THREE.Texture(video_img);
+video_img.src = "https://park-tdl.tspxr.ml:4447/video?src=0";
+video_img.crossOrigin="anonymous";
+video_img.autoplay=true;
+video_img.loop=true;
+
+
+
+const texture = new THREE.VideoTexture(video_img);
+texture.generateMipmaps = false;
+texture.minFilter = THREE.NearestFilter;
+texture.magFilter = THREE.NearestFilter;
+texture.format = THREE.RGBAFormat;
+
 
 
 // texture.setCrossOrigin("anonymous");
 
-// const textureLoader = new THREE.TextureLoader()
+
+
+// const textureLoader = new THREE.TextureLoader();
 // textureLoader.crossOrigin = "Anonymous"
-// const texture = textureLoader.load(video_img)
+// 'https://park-tdl.tspxr.ml:4447/stream?src=0'
+// const texture = textureLoader.load('https://park-tdl.tspxr.ml:4447/stream?src=0');
+
+// const texture = new THREE.Texture(video_img);
+
 
 
 
@@ -57,7 +81,7 @@ scene.add(mesh);
 
 camera.position.x = 0;
 camera.position.y = 0;
-camera.position.z = 100;
+camera.position.z = 120;
 
 
 var vec = new THREE.Vector3(); // create once and reuse
@@ -81,44 +105,18 @@ function get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h){
   // console.log(center_x, center_y, pos);
   camera.position.x = -(pos.x + value.x);
   camera.position.y = -(pos.y + value.y);
-  camera.rotation.x = roll;
-  camera.rotation.y = pitch;
+  camera.rotation.x = 0.1;
+  console.log(camera.rotation.x);
+  // camera.rotation.y = pitch ;
   // camera.rotation.z = yaw;
   
-  var width = parseFloat(w);
-  var height = parseFloat(h);
-  
-  var width_factor = width / height;
-  var height_factor = height / width;
-  // area 50000
-  
-  // var scale_factor = parseInt(parseFloat(area) / 10000);
-  
-  // if (scale_factor != 0){
-  //   var width_scale = (1 + (0.2 * scale_factor)) * width_factor
-  //   var height_scale = (1 +(0.2 * scale_factor)) * height_factor
-  //   // console.log('width', width);
-  //   // console.log('height', height);
-  //   // console.log('scale_factor', scale_factor);
-  //   // console.log('width_factor', width_factor);
-  //   // console.log('height_factor', height_factor);
-  //   // console.log('width_scale', width_scale);
-  //   // console.log('height_scale', height_scale);
-    
-  //   mesh.scale.set(width_scale, height_scale, 1);
-    
-  // }
-  // else{
-  //   mesh.scale.set(1, 1, 1);
-  // }
-
-  mesh.scale.set(1.5, 1.5, 1);
-
+  mesh.scale.set(1.33, 1, 2);
 }
   
 
 var render = function(visible_flag) {
   mesh.visible=visible_flag;
+  // video_img.src = 'https://park-tdl.tspxr.ml:4447/stream?src=0';
   
   renderer.render(scene, camera);
   requestAnimationFrame(render);

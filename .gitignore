@@ -16,6 +16,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /fullchain.pem
 /privkey.pem
 /samples/demo_files/
+/test_project/*.mp4
 
 # Runtime data
 pids

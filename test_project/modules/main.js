@@ -19,6 +19,8 @@ var visible_flag = false;
 let context = canvas.getContext('2d');
 var center_x = 0;
 var center_y = 0;
+var tmp_center_x = 0;
+var tmp_center_y = 0;
 var roll = 0;
 var pitch = 0;
 var yaw = 0;
@@ -37,7 +39,6 @@ videoElement.height = 1280;
 function startEvent() {
     visible_flag = !visible_flag;
     console.log(visible_flag);
-
 }
 
 webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
@@ -59,7 +60,19 @@ webSocket.onmessage = function(message){
     area = recv_data[5];
     w = recv_data[6];
     h = recv_data[7];
-    get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h)
+    console.log(center_x);
+    
+    // x축 세팅, 이전 프레임의 x축보다 10픽셀 이하로 차이나는 경우
+    if (Math.abs(center_x-tmp_center_x) > 10){
+        console.log('x축 100 이하');
+        tmp_center_x = center_x;
+        }
+    if (Math.abs(center_y-tmp_center_y) > 10){
+            console.log('y축 100 이하');
+            tmp_center_y = center_y;
+            }
+
+    get_world_coords(tmp_center_x, tmp_center_y, roll, pitch, yaw, area, w, h)
 };
         
 

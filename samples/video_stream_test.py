@@ -4,8 +4,8 @@ import platform
 
 src = 1
 
-
-captrue = cv2.VideoCapture('https://park-tdl.tspxr.ml:4447/stream?src=0')
+# 'https://park-tdl.tspxr.ml:4447/stream?src=0'
+captrue = cv2.VideoCapture(0)
 
 captrue.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 captrue.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
