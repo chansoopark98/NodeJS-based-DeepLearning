@@ -13,8 +13,7 @@ let height = 1280;    // 해상도 (높이) 640
 // render_canvas.width = width;
 // render_canvas.height = height;
 const canvas = document.createElement("canvas");
-var startButton = document.getElementById("start-button");
-startButton.onclick = startEvent;
+
 var visible_flag = false;
 let context = canvas.getContext('2d');
 var center_x = 0;
@@ -28,27 +27,32 @@ var area = 0;
 var w = 0;
 var h = 0;
 
+var renderELement = document.getElementById('render_area');
+renderELement.addEventListener('click', function(event) {
+    // console.log(event.pageX);
+    // console.log(event.pageY);
+    visible_flag = !visible_flag;
+    console.log(visible_flag);
+}, false);
+
 // const videoElement = document.querySelector('video');
 var videoElement = document.getElementById('video');
+
+
+
 videoElement.addEventListener('canplaythrough', render_video);
 console.log(videoElement.videoWidth, videoElement.videoHeight);
 videoElement.width = 720;
 videoElement.height = 1280;
 
-
-function startEvent() {
-    visible_flag = !visible_flag;
-    console.log(visible_flag);
-}
-
 webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시지 전송
     if (webSocket.readyState === webSocket.OPEN) {
         if (visible_flag == true) {
-            var sendData = canvas.toDataURL('image/jpeg', 0.5)
+            var sendData = canvas.toDataURL('image/jpeg', 0.3)
             webSocket.send(sendData.split(",")[1]);
         }
     }
-}, 100);
+}, 50);
 
 webSocket.onmessage = function(message){
     var recv_data = message.data.split(',');
@@ -60,15 +64,15 @@ webSocket.onmessage = function(message){
     area = recv_data[5];
     w = recv_data[6];
     h = recv_data[7];
-    console.log(center_x);
+    
     
     // x축 세팅, 이전 프레임의 x축보다 10픽셀 이하로 차이나는 경우
     if (Math.abs(center_x-tmp_center_x) > 10){
-        console.log('x축 100 이하');
+        
         tmp_center_x = center_x;
         }
-    if (Math.abs(center_y-tmp_center_y) > 10){
-            console.log('y축 100 이하');
+    if (Math.abs(center_y-tmp_center_y) > 20){
+            
             tmp_center_y = center_y;
             }
 
@@ -91,7 +95,7 @@ function onLoad() {
 async function render_video(){
     context.drawImage(videoElement, 0, 0, 720, 1280);  
     render(visible_flag);
-    await requestAnimationFrame(render_video)
+    await requestAnimationFrame(render_video);
 }
 
 onLoad();

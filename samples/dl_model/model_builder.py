@@ -111,57 +111,64 @@ class SemanticModel():
         x,y,w,h = cv2.boundingRect(display_contours[0])
         area = cv2.contourArea(display_contours[0])
 
-        depth_map = np.ones((mask.shape[0], mask.shape[1]), np.float32)
-        depth_map = np.where(mask>=1., depth_map * 300, depth_map)
-        depth_map = np.expand_dims(depth_map, axis=-1)
-        
-        # depth_map[y:y+h, x:x+w] *= 300.
-        
-
-        open3d_rgb = o3d.geometry.Image(img)
-        pred_depth = o3d.geometry.Image(depth_map)
-
-        rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
-            open3d_rgb, pred_depth)
-
-        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
-            rgbd_image,
-            o3d.camera.PinholeCameraIntrinsic(
-                o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault))
-
-        xyz_load = np.asarray(pcd.points)
-
-        pc = np.zeros((img_h, img_w, 3))
-        xyz_load = np.reshape(xyz_load, (img_h, img_w, 3))
-        pc[:,:,0] = xyz_load[:, :, 0]
-        pc[:,:,1] = xyz_load[:, :, 1]
-        pc[:,:,2] = xyz_load[:, :, 2]
-
         center_x = x + (w//2)
         center_y = y + (h//2)
-        
-        # choose_pc = pc[center_y-1:center_y+1, center_x-1:center_x+1]
-        choose_pc = pc[y:y+h, x:x+w]
 
-        pointCloud_area = np.zeros((img_h, img_w), dtype=np.uint8)
-        # pointCloud_area = cv2.line(pointCloud_area, (center_x-1, center_y-1), (center_x+1, center_y+1), 255, 10, cv2.LINE_AA)
-        pointCloud_area = np.where(mask>=1., 255, pointCloud_area)
-        choose_pc = pc[np.where(pointCloud_area[:, :]==255)]
+        # depth_map = np.ones((mask.shape[0], mask.shape[1]), np.float32)
+        # depth_map = np.where(mask>=1., depth_map * 300, depth_map)
+        # depth_map = np.expand_dims(depth_map, axis=-1)
+        
+        # # depth_map[y:y+h, x:x+w] *= 300.
+        
+
+        # open3d_rgb = o3d.geometry.Image(img)
+        # pred_depth = o3d.geometry.Image(depth_map)
+
+        # rgbd_image = o3d.geometry.RGBDImage.create_from_color_and_depth(
+        #     open3d_rgb, pred_depth)
+
+        # pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
+        #     rgbd_image,
+        #     o3d.camera.PinholeCameraIntrinsic(
+        #         o3d.camera.PinholeCameraIntrinsicParameters.PrimeSenseDefault))
+
+        # xyz_load = np.asarray(pcd.points)
+
+        # pc = np.zeros((img_h, img_w, 3))
+        # xyz_load = np.reshape(xyz_load, (img_h, img_w, 3))
+        # pc[:,:,0] = xyz_load[:, :, 0]
+        # pc[:,:,1] = xyz_load[:, :, 1]
+        # pc[:,:,2] = xyz_load[:, :, 2]
+
+
+        
+        # # choose_pc = pc[center_y-1:center_y+1, center_x-1:center_x+1]
+        # choose_pc = pc[y:y+h, x:x+w]
+
+        # pointCloud_area = np.zeros((img_h, img_w), dtype=np.uint8)
+        # # pointCloud_area = cv2.line(pointCloud_area, (center_x-1, center_y-1), (center_x+1, center_y+1), 255, 10, cv2.LINE_AA)
+        # pointCloud_area = np.where(mask>=1., 255, pointCloud_area)
+        # choose_pc = pc[np.where(pointCloud_area[:, :]==255)]
                     
-        choose_pc = choose_pc[~np.isnan(choose_pc[:,2])]
+        # choose_pc = choose_pc[~np.isnan(choose_pc[:,2])]
 
-        meanarr, comparr, _ = cv2.PCACompute2(choose_pc, mean=None)
+        # meanarr, comparr, _ = cv2.PCACompute2(choose_pc, mean=None)
 
-        comparr = -comparr
+        # comparr = -comparr
         
-        if comparr[2, 2] < 0:
-            comparr[2, :3] = -comparr[2, :3]
+        # if comparr[2, 2] < 0:
+        #     comparr[2, :3] = -comparr[2, :3]
                     
-        # Target Pose 생성
-        target_pose = np.identity(4)
-        target_pose[:3,:3] = comparr.T # rotation
-        target_pose[:3,3] = meanarr # transration
+        # # Target Pose 생성
+        # target_pose = np.identity(4)
+        # target_pose[:3,:3] = comparr.T # rotation
+        # target_pose[:3,3] = meanarr # transration
 
-        roll, pitch, yaw = self.euler_from_matrix(rot=target_pose[:3,:3], degree=True)
-        
+        # roll, pitch, yaw = self.euler_from_matrix(rot=target_pose[:3,:3], degree=True)
+
+        roll =0
+        pitch = 0
+        yaw = 0
+        area = 0
+
         return [center_x, center_y, roll, pitch, yaw, area, w, h]

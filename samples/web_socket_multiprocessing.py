@@ -57,13 +57,13 @@ class TCPServer(SemanticModel):
             # sift x coord
             align_center_x = 240 // 2
             if center_x >= align_center_x:
-                center_x -= int(w * 0.7)
+                center_x -= int(w * 0.85)
 
                 if center_x <= 0:
                     center_x = 0    
 
             else:
-                center_x += int(w * 0.7)
+                center_x += int(w * 0.85)
                 
                 if center_x >= 240:
                     center_x = 240

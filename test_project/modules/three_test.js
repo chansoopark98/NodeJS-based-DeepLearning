@@ -16,20 +16,46 @@ var camera_height = 1280; // 640
 // const video = document.createElement('video');
 
 
-const video_img = document.getElementById( 'test' );
-video_img.src = "https://park-tdl.tspxr.ml:4447/video?src=0";
-video_img.crossOrigin="anonymous";
-video_img.autoplay=true;
-video_img.loop=true;
+
+
+// video_img.autoplay=true;
+// video_img.loop=true;
 
 
 
-const texture = new THREE.VideoTexture(video_img);
+
+
+// const getTextures = ()=> new Promise((resolve, reject)=>{
+//   const manager = new THREE.LoadingManager(()=>resolve(textures));
+//   const loader = new THREE.TextureLoader(manager);
+//   const textures = [
+//   'https://park-tdl.tspxr.ml:4447/video'
+//   ].map(filename=>loader.load(filename));
+// });
+
+// getTextures().then(result=>console.log("We received,", result,"!"));
+
+
+// 비디오 설정
+// const video_img = document.getElementById( 'test' );
+// video_img.src = "assets/video_1.mp4";
+// video_img.crossOrigin="anonymous";
+
+
+const videoElement = document.createElement('video');
+videoElement.src="assets/TSP_XR.mp4";
+videoElement.crossOrigin = 'anonymous';
+videoElement.loop = true;
+videoElement.muted = true;
+videoElement.play();
+
+
+const texture = new THREE.VideoTexture(videoElement);
+
 texture.generateMipmaps = false;
-texture.minFilter = THREE.NearestFilter;
-texture.magFilter = THREE.NearestFilter;
+texture.minFilter = THREE.LinearFilter;
+texture.magFilter = THREE.LinearFilter;
 texture.format = THREE.RGBAFormat;
-
 
 
 // texture.setCrossOrigin("anonymous");
@@ -63,7 +89,7 @@ var renderer = new THREE.WebGLRenderer( { canvas: render_area, alpha: true, pres
 renderer.setSize(camera_width, camera_height);
 //document.body.appendChild(renderer.domElement);
 
-const geometry = new THREE.BoxGeometry(10, 10, 10); // width, height, depth
+const geometry = new THREE.BoxGeometry(10, 10, 3); // width, height, depth
 const material = new THREE.MeshLambertMaterial({ color: 0x1ec876 });
 const mesh = new THREE.Mesh(geometry, materials);
 
@@ -105,12 +131,20 @@ function get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h){
   // console.log(center_x, center_y, pos);
   camera.position.x = -(pos.x + value.x);
   camera.position.y = -(pos.y + value.y);
-  camera.rotation.x = 0.1;
-  console.log(camera.rotation.x);
+
+  if (center_x >= camera_width /2){
+    var y_rotation_axis = 1;
+  }
+  else{
+    var y_rotation_axis = -1;
+  }
+  
+  camera.rotation.y = 0.4 * y_rotation_axis;
+  // console.log(camera.rotation.x);
   // camera.rotation.y = pitch ;
   // camera.rotation.z = yaw;
   
-  mesh.scale.set(1.33, 1, 2);
+  mesh.scale.set(2, 2, 2);
 }
   
 

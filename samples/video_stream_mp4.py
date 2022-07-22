@@ -6,6 +6,7 @@ from flask import stream_with_context
 import flask_cors
 import re
 import ssl
+import time
 
 app = Flask( __name__ )
 flask_cors.CORS(app)
@@ -17,7 +18,21 @@ def after_request(response):
 
 
 def get_chunk(byte1=None, byte2=None):
-    full_path = "test_video.mp4"
+    second = (time.localtime(time.time()).tm_sec) // 15
+    print(second)
+    if second <= 0:
+        full_path = "video_1.mp4"    
+    elif second <= 1:
+        full_path = "video_2.mp4"    
+    elif second <= 2:
+        full_path = "video_3.mp4"    
+    else:
+        full_path = "video_4.mp4"
+
+    # full_path = "video_2.mp4"
+
+    
+
     file_size = os.stat(full_path).st_size
     print(file_size)
     start = 0
@@ -38,6 +53,7 @@ def get_chunk(byte1=None, byte2=None):
 @app.route('/video')
 def get_file():
     
+
     range_header = request.headers.get('Range', None)
     byte1, byte2 = 0, None
     if range_header:
