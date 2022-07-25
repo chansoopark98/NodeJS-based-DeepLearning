@@ -7,11 +7,12 @@ import base64
 import time
 from dl_model.model_builder import SemanticModel
 import tensorflow as tf
-from websockets.extensions import permessage_deflate
+from aiogrpc import insecure_channel
+from tensorflow_serving.apis import predict_pb2
+from tensorflow_serving.apis import prediction_service_pb2_grpc
 import concurrent.futures
 
 client_num = 1
-
 
 class TCPServer(SemanticModel):
     def __init__(self, hostname, port, cert_dir, key_dir):
@@ -32,7 +33,7 @@ class TCPServer(SemanticModel):
         image = cv2.resize(image, (240, 320))
         # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
-        start = time.process_time()
+        # start = time.process_time()
         output = self.model_predict(image=image, gpu_name=gpu_name)
         
         
@@ -40,30 +41,30 @@ class TCPServer(SemanticModel):
         if len(calc_pca) != 0:
             center_x, center_y, roll, pitch, yaw, area, w, h = calc_pca
     
-            duration = (time.process_time() - start)
+            # duration = (time.process_time() - start)
             # print("time: {0}".format(duration))
             
 
-            cv2.circle(output, (int(center_x), int(center_y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
-            output = cv2.cvtColor(output, cv2.COLOR_GRAY2BGR)
+            # cv2.circle(output, (int(center_x), int(center_y)), int(3), (0, 0, 255), 3, cv2.LINE_AA)
+            # output = cv2.cvtColor(output, cv2.COLOR_GRAY2BGR)
 
             
             # image = cv2.hconcat([image, output])
 
-            cv2.imshow(usr_id, output)
-            cv2.waitKey(1)
+            # cv2.imshow(usr_id, output)
+            # cv2.waitKey(1)
 
             
             # sift x coord
             align_center_x = 240 // 2
             if center_x >= align_center_x:
-                center_x -= int(w * 0.85)
+                center_x -= int(w * 0.8)
 
                 if center_x <= 0:
                     center_x = 0    
 
             else:
-                center_x += int(w * 0.85)
+                center_x += int(w * 0.8)
                 
                 if center_x >= 240:
                     center_x = 240
@@ -151,4 +152,3 @@ if __name__ == "__main__":
     # server.run_server()
     with concurrent.futures.ProcessPoolExecutor() as pool:
             server.loop.run_in_executor(pool, asyncio.run(server.run_server()))
-            

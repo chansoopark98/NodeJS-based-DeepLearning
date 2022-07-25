@@ -144,7 +144,7 @@ function get_world_coords(center_x, center_y, roll, pitch, yaw, area, w, h){
   // camera.rotation.y = pitch ;
   // camera.rotation.z = yaw;
   
-  mesh.scale.set(2, 2, 2);
+  mesh.scale.set(2.4, 1.5, 2);
 }
   
 

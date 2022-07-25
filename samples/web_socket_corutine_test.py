@@ -1,4 +1,3 @@
-from doctest import FAIL_FAST
 import ssl
 import asyncio
 import websockets
@@ -11,6 +10,7 @@ from aiogrpc import insecure_channel
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2_grpc
 from concurrent.futures import ProcessPoolExecutor
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
 import concurrent.futures
 # docker run -t --gpus all --rm -p 8500:8500 -v "/home/park/park/NodeJS-based-DeepLearning/samples/dl_model/saved_model:/models/test_model" -e MODEL_NAME=test_model tensorflow/serving:2.6.2-gpu
 # docker run -t --gpus all --rm -p 8500:8500 -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path:/models/test_model" -e MODEL_NAME=test_model tensorflow/serving:2.6.2-gpu
@@ -38,7 +38,7 @@ docker run --runtime=nvidia -t -p 8498:8498 --rm -v "/home/park/park/Tensorflow-
 
 docker run --runtime=nvidia -t -p 8499:8499 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="1" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8499 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4 --per_process_gpu_memory_fraction=0.3
 
-docker run --runtime=nvidia -t -p 8500:8500 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="1" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8500 --num_load_threads=8 --tensorflow_session_parallelism=0 --tensorflow_intra_op_parallelism=4 --tensorflow_inter_op_parallelism=4
+docker run --runtime=nvidia -t -p 8500:8500 --rm -v "/home/park/park/Tensorflow-Keras-Realtime-Segmentation/checkpoints/export_path_trt:/models/test_model2" -e MODEL_NAME=test_model2 -e NVIDIA_VISIBLE_DEVICES="0" -e LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64 -e TF_TENSORRT_VERSION=7.2.2 tensorflow/serving:2.6.2-gpu --port=8500
 
 """
 
@@ -79,7 +79,32 @@ class TCPServer():
         self.tcp_address = 'http://localhost:8501/v1/models/test_model:predict'       
 
 
-    async def get_data(self, data, session):
+    def calc_pca(self, img, mask):
+        img_h = mask.shape[0]
+        img_w = mask.shape[1]
+
+        # Get display area
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if len(contours) == 0:
+            return []
+
+        display_contours = sorted(contours, key=cv2.contourArea, reverse=True)
+                
+        x,y,w,h = cv2.boundingRect(display_contours[0])
+        area = cv2.contourArea(display_contours[0])
+
+        center_x = x + (w//2)
+        center_y = y + (h//2)
+
+        roll =0
+        pitch = 0
+        yaw = 0
+        area = 0
+
+        return [center_x, center_y, roll, pitch, yaw, area, w, h]
+
+    async def get_data(self, data, session, websocket):
         base64_data = data[0]
 
         if len(base64_data) % 4:
@@ -90,13 +115,14 @@ class TCPServer():
         imgdata = base64.b64decode(base64_data)
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
         start = time.process_time()
-        image = cv2.resize(image, (320, 240))
-        image = image.astype(np.float32) / 255.
-        
-        # send_image = np.expand_dims(image, axis=0)
-        
+        image = cv2.resize(image, (240, 320))
+
+        # image = (image / 127.5) -1.
+        image = image.astype(np.float32)
+        image = preprocess_input(image, mode='tf')  
+
         output = await session.predict(image=image)
 
         output = output.outputs['output'].float_val
@@ -104,19 +130,46 @@ class TCPServer():
         output = np.reshape(output, (320, 240, 3))
         semantic_output = output[:, :, :2]
         semantic_output = np.argmax(semantic_output, axis=-1)
-        duration = (time.process_time() - start)
-        print("time: {0}".format(duration))
-        semantic_output = semantic_output * 127
-
-        # cv2.imshow(str(client_id), output.astype(np.uint8))
-        cv2.imshow(str('1'), image)
+        semantic_output = np.expand_dims(semantic_output, axis=-1)
+        semantic_output = semantic_output.astype(np.uint8) * 127
+        cv2.imshow('test', semantic_output)
         cv2.waitKey(1)
         
-        encode_image = cv2.imencode('.jpeg', image)
-        encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
-        encode_image = 'data:image/jpeg;base64' + ',' + encode_image
+        
+        
+        calc_pca = self.calc_pca(img=image, mask=semantic_output)
 
-        return '1', encode_image
+        if len(calc_pca) != 0:
+            center_x, center_y, roll, pitch, yaw, area, w, h = calc_pca
+
+            # sift x coord
+            align_center_x = 240 // 2
+            if center_x >= align_center_x:
+                center_x -= int(w * 0.8)
+
+                if center_x <= 0:
+                    center_x = 0    
+
+            else:
+                center_x += int(w * 0.8)
+                
+                if center_x >= 240:
+                    center_x = 240
+            
+
+            # re-scale x,y coords
+            Rx = 720/240
+            Ry = 1280/320
+            rescale_center_x = round(Rx * center_x)
+            rescale_center_y = round(Ry * center_y)
+
+
+            encode_image = str(rescale_center_x) + ',' + str(rescale_center_y) + \
+                ',' + str(roll) + ',' + str(pitch) + ',' + str(yaw) + \
+                ',' + str(int(area)) + ',' + str(w) + ',' + str(h)
+            
+            await websocket.send(encode_image)
+            # return encode_image
         
 
             
@@ -129,18 +182,18 @@ class TCPServer():
             print('client_num : {0}, address name {1}'.format(client_num, session.endpoint))
             client_num += 1
             while True:
-                try:
-                    # data = await websocket.recv()
-                    data = await asyncio.gather(websocket.recv())
-                    client_id, encode_image = await self.get_data(data=data, session=session)
-                    # await websocket.send(encode_image)
+                # try:
+                    
+                data = await asyncio.gather(websocket.recv())
+                await self.get_data(data=data, session=session, websocket=websocket)
+                
 
-                except Exception as e:
-                    print('Log : {0}'.format(e))
-                    cv2.destroyWindow(str(client_id))
-                    await websocket.close()
-                    client_num -= 1
-                    break           
+
+                # except Exception as e:
+                # print('Log :1 {0}'.format(e))
+                # await websocket.close()
+                # client_num -= 1
+                    # break           
 
     async def run_server(self):
         self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

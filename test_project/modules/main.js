@@ -71,7 +71,7 @@ webSocket.onmessage = function(message){
         
         tmp_center_x = center_x;
         }
-    if (Math.abs(center_y-tmp_center_y) > 20){
+    if (Math.abs(center_y-tmp_center_y) > 30){
             
             tmp_center_y = center_y;
             }
