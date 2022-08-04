@@ -3,8 +3,10 @@
 
 // import { load_model } from "../tf_test.js";
 
-
-
+// https://www.tensorflow.org/js/guide/platform_environment?hl=ko // tf backend 변경 확인 방법
+// tf.setBackend('wasm');
+// tf.setBackend('webgl');
+console.log(tf.getBackend()); // tf backend 확인
 
 // import { loadGraphModel } from "@tensorflow/tfjs-node";
 import * as camera_util from "./camera.js";
@@ -52,14 +54,18 @@ async function render_video(){
     // context.drawImage(videoElement, 0, 0, 720, 1280);  
     tf.engine().startScope()
 
-    var date1 = new Date();
+    
 
     const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
     const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
     const normalizedImage = tf.div(resizedImage, 255);
     // var output = model.predict(normalizedImage);
-    var output = await model.executeAsync(normalizedImage);
+    // var output = await model.executeAsync(normalizedImage);
+    // var output = model.predict(normalizedImage);
+    var date1 = new Date();
+    var output = model.execute(normalizedImage);
     
+
     var date2 = new Date();
     var diff = date2 - date1;
     console.log(diff);
