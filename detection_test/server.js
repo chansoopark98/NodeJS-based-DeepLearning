@@ -13,10 +13,12 @@ app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
 
 app.use(cors());
+console.log(__dirname);
 app.use('/assets', express.static(__dirname + '/assets'));
 app.use('/styles', express.static(__dirname + '/styles'));
 app.use('/modules', express.static(__dirname + '/modules'));
 app.use('/build', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/three/build'));
+app.use('/tfjs', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/@tensorflow/tfjs'));
 var server_port = 5555;
 var server = require('https').createServer(options, app);
 
@@ -25,6 +27,7 @@ var server = require('https').createServer(options, app);
 // app.set('views',  __dirname + '/views');    // ejs이 있는 폴더를 지정
 
 app.get('/', (req, res) => {
+  
     res.render(__dirname + "/test_page.html");    // index.ejs을 사용자에게 전달
 })
 
