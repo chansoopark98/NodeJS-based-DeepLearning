@@ -50,21 +50,30 @@ function batched_nms(boxes, scores, idxs, iou_threshold, top_k){
     var offsets = idxs * (max_corrdinate + 1);
 }
 
+
+
 async function render_video(){
     // context.drawImage(videoElement, 0, 0, 720, 1280);  
     tf.engine().startScope()
 
     
-
-    const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
-    const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
-    const normalizedImage = tf.div(resizedImage, 255);
-    // var output = model.predict(normalizedImage);
-    // var output = await model.executeAsync(normalizedImage);
-    // var output = model.predict(normalizedImage);
-    var date1 = new Date();
-    var output = model.execute(normalizedImage);
+    const date1 = new Date();
     
+    const logits = tf.tidy(() => {
+        const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
+        const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
+        const normalizedImage = tf.div(resizedImage, 255);
+        // var output = model.predict(normalizedImage);
+        // var output = await model.executeAsync(normalizedImage);
+        // var output = model.predict(normalizedImage);
+
+        const output = model.predict(normalizedImage);
+
+        return output
+      });
+    
+
+
 
     var date2 = new Date();
     var diff = date2 - date1;
