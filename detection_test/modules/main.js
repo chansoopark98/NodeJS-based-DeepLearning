@@ -1,28 +1,18 @@
-// import * as tf from "./@tensorflow/tfjs-node";
-
-
-// import { load_model } from "../tf_test.js";
-
-// https://www.tensorflow.org/js/guide/platform_environment?hl=ko // tf backend 변경 확인 방법
+tf.ENV.set("WEBGL_CPU_FORWARD", true)
+tf.setBackend('webgl');
 // tf.setBackend('wasm');
-// tf.setBackend('webgl');
 console.log(tf.getBackend()); // tf backend 확인
 
-// import { loadGraphModel } from "@tensorflow/tfjs-node";
 import * as camera_util from "./camera.js";
 
-// const tf = require('@tensorflow/tfjs-node');
+tf.ready().then(() => {
+});
+
 const model = await tf.loadGraphModel('assets/converted_tfjs/model.json');
-// const model = await tf.loadLayersModel('assets/converted_tfjs/model.json');
+// const warmupResult = model.predict(tf.zeros([1,300,300,3]));
+// warmupResult.dataSync();
+// warmupResult.dispose();
 
-
-// import * as tf from '@tensorflow/tfjs';
-
-
-// 카메라 세팅 부분
-let front_camera = false    // 전면 카메라 사용 유무
-let width = 720;      // 해상도 (너비) 480
-let height = 1280;    // 해상도 (높이) 640
 
 // const canvas = document.createElement("canvas");
 const canvas = document.getElementById("render_area");
@@ -59,18 +49,74 @@ async function render_video(){
     
     const date1 = new Date();
     
-    const logits = tf.tidy(() => {
-        const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
-        const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
-        const normalizedImage = tf.div(resizedImage, 255);
-        // var output = model.predict(normalizedImage);
-        // var output = await model.executeAsync(normalizedImage);
-        // var output = model.predict(normalizedImage);
+    // const logits = tf.tidy(() => {
+    //     const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
+    //     const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
+    //     const normalizedImage = tf.div(resizedImage, 255);
+    //     // var output = model.predict(normalizedImage);
+    //     var output = await model.executeAsync(normalizedImage);
+    //     // var output = model.predict(normalizedImage); // [1, 8732, 25]
+        
+    //     // batch_boxes = detections[:, :, classes:]
+    
+    //     console.log(output);
+    //     output.dataSync();
+    //     output.dispose();
+    //     return output
+    //   });
 
-        const output = model.predict(normalizedImage);
+    const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
+    const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
+    const normalizedImage = tf.div(resizedImage, 255);
+    // var output = model.predict(normalizedImage);
+    var output = await model.executeAsync(normalizedImage);
 
-        return output
-      });
+
+    output = tf.squeeze(output, 0); // [1, 1, 6] -> [1, 6]
+    
+                
+    context.strokeStyle = "#00FFFF";
+    context.lineWidth = 4;
+    context.font = '48px serif';
+
+    context.fillStyle = "#000000";
+    
+    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+    if (output.shape[0] >= 1){
+        var boxes = output.slice([0, 0], [-1, 4]); // [1, 4]
+        var scores = output.slice([0, 4], [-1, 1]); // [1, 1]
+        var labels = output.slice([0, 5], [-1, 1]); // [1, 1]
+        
+        // console.log(scores.dataSync(), labels.dataSync());
+        var calc_boxes = boxes.dataSync();
+        // console.log(calc_boxes.length); // [1, 2, 6]
+        var target_loop = calc_boxes.length/2
+        var detected_labels = labels.dataSync();
+
+        for (let i=1; i<=target_loop; i++){
+            console.log(detected_labels);
+            var idx = i * 4;
+            var x_min = calc_boxes[idx-4] * context.canvas.width;
+            var y_min = calc_boxes[idx-3] * context.canvas.height;
+            var x_max = calc_boxes[idx-2] * context.canvas.width;
+            var y_max = calc_boxes[idx-1] * context.canvas.height;    
+            var width = x_max- x_min;
+            var height = y_max - y_min;
+        
+
+            context.strokeRect(x_min, y_min, width, height);
+
+            // const font = "16px sans-serif";
+            // const textWidth = context.measureText(detected_labels[i-1]).width;
+            // const textHeight = parseInt(font, 10); // base 10
+            // context.fillRect(x_min, y_min, textWidth + 4, textHeight + 4);
+
+            context.fillText(detected_labels[i-1], x_min, y_min);
+        }
+        
+    
+        
+    }
     
 
 
@@ -79,49 +125,7 @@ async function render_video(){
     var diff = date2 - date1;
     console.log(diff);
 
-    // var boxes = output.slice([0, 0], [-1, 4]);
-    // var scores = output.slice([0, 4], [-1, 1]);
-    // var labels = output.slice([0, 5], [-1, 1]);
-
-    // scores = tf.squeeze(scores, 1)
-    // labels = tf.squeeze(labels, 1)
-    // // console.log(boxes);
-    
-    // boxes = boxes.arraySync();
-    // scores = scores.arraySync();
-    // labels = labels.arraySync();
-    
-    // var x_min = boxes[0][0];
-    // var y_min = boxes[0][1];
-    // var x_max = boxes[0][2];
-    // var y_max = boxes[0][3];
-    
-
-    
-    
-    // var box_width = x_max - x_min;
-    // var box_height = y_max - y_min;
-
-
-    // // console.log(box_width);
-    // // console.log(box_height);
-    
-    
-    // // // # low_scoring_mask = scores > confidence_threshold
-    // // var low_scoring_mask = tf.less(0.01, scores)
-    
-    // // // # boxes, scores, labels = tf.boolean_mask(boxes, low_scoring_mask), tf.boolean_mask(scores, low_scoring_mask), tf.boolean_mask(labels, low_scoring_mask)
-    // // boxes = await tf.booleanMaskAsync(boxes, low_scoring_mask);
-    // // scores = await tf.booleanMaskAsync(scores, low_scoring_mask);
-    // // labels = await tf.booleanMaskAsync(labels, low_scoring_mask);
-    
-    // // # keep  = batched_nms(boxes, scores, labels, iou_threshold, top_k)
-
-    // // # boxes, scores, labels = tf.gather(boxes, keep), tf.gather(scores, keep), tf.gather(labels, keep)
-    // console.log(canvas.width);
-    // context.beginPath();
-    // context.rect(x_min * canvas.width , y_min * canvas.height, box_width * canvas.width, box_height * canvas.height);
-    // context.stroke();
+ 
     tf.engine().endScope()
     await requestAnimationFrame(render_video);
 }
