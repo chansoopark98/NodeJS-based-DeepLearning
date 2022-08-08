@@ -1,5 +1,5 @@
-// tf.ENV.set("WEBGL_CPU_FORWARD", true)
-// tf.setBackend('webgl');
+tf.ENV.set("WEBGL_CPU_FORWARD", true)
+tf.setBackend('webgl');
 
 // tf.setBackend('wasm');
 console.log(tf.getBackend()); // tf backend 확인
@@ -10,7 +10,7 @@ tf.ready().then(() => {
 });
 
 const model = await tf.loadGraphModel('assets/converted_tfjs/model.json');
-// const model = await tf.loadLayersModel('assets/converted_tfjs/model.json');
+
 
 // const warmupResult = model.predict(tf.zeros([1,300,300,3]));
 // warmupResult.dataSync();
