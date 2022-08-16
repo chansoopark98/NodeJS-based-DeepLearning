@@ -89,6 +89,7 @@
              audio: false,
              video: video
          };
+
      
          navigator.mediaDevices.getUserMedia(constraints).then(stream => {
              stream.getVideoTracks().forEach(track => {
@@ -111,9 +112,9 @@
      if (userAgent.match("iphone") || userAgent.match("ipad") || userAgent.match("ipod") || userAgent.match("mac")) {
          isIOS = true;
          isMobile = true;
-         if (!userAgent.match("safari") || userAgent.match("naver") || userAgent.match("twitter")) {
-             isIOS = false;
-         }
+        //  if (!userAgent.match("safari") || userAgent.match("naver") || userAgent.match("twitter")) {
+        //      isIOS = false;
+        //  }
      } else {
          isMobile = userAgent.match("Android") || userAgent.match("mobile");
      }
@@ -127,6 +128,7 @@
          else if (isIOS) {
              cameraId = "ios";
          }
+
  
          openCamera(baseVideo, cameraId).then((camAct, stream) => {
              if (camAct) {

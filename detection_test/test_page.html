@@ -29,12 +29,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
      
     <!-- <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js"></script> -->
-
     
-    
-    
-
     <script type="module" src="./modules/main.js"></script>
+    
     <!-- <script type="module" src="./modules/three_test.js"></script> -->
 </head>
 <body>
@@ -42,8 +39,9 @@
         <img src="./assets/logo.png" />
         <span class="loading-text">AR Test page</span>
 
-        <video id="video"></video>
+        <video id="video" muted playsinline autoplay></video>
         <canvas id="render_area" width="720" height="1280"></canvas>
+        <canvas id="render_ar" width="720" height="1280"></canvas>
         
          
          <!-- <video id="test" crossorigin="anonymous"  

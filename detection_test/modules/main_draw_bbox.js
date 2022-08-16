@@ -1,15 +1,15 @@
 tf.ENV.set("WEBGL_CPU_FORWARD", true)
 tf.setBackend('webgl');
+
 // tf.setBackend('wasm');
 console.log(tf.getBackend()); // tf backend 확인
 
 import * as camera_util from "./camera.js";
-import { render_ar_video, switch_visible, get_world_coords } from "./three_test.js";
 
 tf.ready().then(() => {
 });
 
-const model = await tf.loadGraphModel('assets/display_detection/model.json');
+const model = await tf.loadGraphModel('assets/converted_tfjs/model.json');
 
 
 // const warmupResult = model.predict(tf.zeros([1,300,300,3]));
@@ -32,21 +32,12 @@ var videoElement = document.getElementById('video');
 
 videoElement.addEventListener('canplaythrough', render_video);
 console.log(videoElement.videoWidth, videoElement.videoHeight);
-
-
-// var originalVideo = document.getElementById('video');
-// originalVideo.addEventListener('canplaythrough', render_ar_video);
-
 videoElement.width = 720;
 videoElement.height = 1280;
-
-var visibleFlag = false;
-var unvisibleCount = 0;
         
 var calc_boxes = 0;
-var detected_labels = 0;
-var best_idx =0;
 var target_loop = 0;
+var detected_labels = 0;
 
 var x_min = 0;
 var y_min = 0;
@@ -69,76 +60,60 @@ async function render_video(){
     tf.engine().startScope()
 
     
-    // const date1 = new Date();
+    const date1 = new Date();
     
     const inputImageTensor = tf.expandDims(tf.cast(tf.browser.fromPixels(videoElement), 'float32'), 0);
     const resizedImage = tf.image.resizeBilinear(inputImageTensor, [300, 300]);
     // const normalizedImage = tf.div(resizedImage, 255);
-
+    
+    
 
     var output = await model.executeAsync(resizedImage);
     // var output = model.predict(transpose_img);
 
-    
-    output = tf.squeeze(output, 0); // [1, N, 6] -> [N, 6]
-    
+
+    output = tf.squeeze(output, 0); // [1, 1, 6] -> [1, 6]
+    // print(output)
     context.clearRect(0, 0, context.canvas.width, context.canvas.height);
     if (output.shape[0] >= 1){
-        console.log('detection');
-        if (visibleFlag == false){
-            switch_visible(true);
-        }
-
-        var boxes = output.slice([0, 0], [-1, 4]); // [N, 4]
-        var scores = output.slice([0, 4], [-1, 1]); // [N, 1]
-        var labels = output.slice([0, 5], [-1, 1]); // [N, 1]
+        var boxes = output.slice([0, 0], [-1, 4]); // [1, 4]
+        var scores = output.slice([0, 4], [-1, 1]); // [1, 1]
+        var labels = output.slice([0, 5], [-1, 1]); // [1, 1]
         
-        
-        // Get from best confidence score
-        best_idx = scores.argMax(0).dataSync(); // -> return in index
-        
-        
+        // console.log(scores.dataSync(), labels.dataSync());
         calc_boxes = boxes.dataSync();
-        
+        // console.log(calc_boxes.length); // [1, 2, 6]
         target_loop = calc_boxes.length/2
         detected_labels = labels.dataSync();
 
-        
-        var idx = (best_idx + 1) * 4;
-        x_min = calc_boxes[idx-4] * context.canvas.width;
-        y_min = calc_boxes[idx-3] * context.canvas.height;
-        x_max = calc_boxes[idx-2] * context.canvas.width;
-        y_max = calc_boxes[idx-1] * context.canvas.height;    
-        width = x_max- x_min;
-        height = y_max - y_min;
-    
-
-        context.strokeRect(x_min, y_min, width, height);
-        context.fillText(detected_labels[best_idx], x_min, y_min);
-
-        tf.dispose(boxes);
-        tf.dispose(scores);
-        tf.dispose(labels);
-
-        var center_x = x_min + width/2;
-        var center_y = y_min + height/2;
+        for (let i=1; i<=target_loop; i++){
+            
+            var idx = i * 4;
+            x_min = calc_boxes[idx-4] * context.canvas.width;
+            y_min = calc_boxes[idx-3] * context.canvas.height;
+            x_max = calc_boxes[idx-2] * context.canvas.width;
+            y_max = calc_boxes[idx-1] * context.canvas.height;    
+            width = x_max- x_min;
+            height = y_max - y_min;
         
 
-        get_world_coords(center_x, center_y, width, height, detected_labels[best_idx]);
-    }
-    else{
-        unvisibleCount += 1;
-        
-        if (unvisibleCount == 3){
-            unvisibleCount = 0;
-            switch_visible(false);
+            context.strokeRect(x_min, y_min, width, height);
+
+            context.fillText(detected_labels[i-1], x_min, y_min);
+
+            tf.dispose(boxes);
+            tf.dispose(scores);
+            tf.dispose(labels);
+            
         }
+        
+        
     }
     
     tf.dispose(output);
-    // var date2 = new Date();
-    // var diff = date2 - date1;
-    // // console.log(diff);
+    var date2 = new Date();
+    var diff = date2 - date1;
+    console.log(diff);
     
  
     tf.engine().endScope()
