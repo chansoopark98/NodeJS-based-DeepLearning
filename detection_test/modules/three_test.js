@@ -1,7 +1,15 @@
 //import * as THREE from 'three';
 
-import * as THREE from '../build/three.module.js'
 
+// import GLTFLoader from '../gltf_loader';
+// import GLTFLoader from '../gltf/index.js';
+// import GLTFLoader from '../examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from '../gltf/examples/jsm/loaders/GLTFLoader.js';
+// import { GLTFLoader } from 'https://cdn.skypack.dev/three@0.129.0/examples/jsm/loaders/GLTFLoader.js';
+import * as THREE from '../build/three.module.js'
+// import * as GLTF from '../gltf_loader/index.js'
+
+const loader = new GLTFLoader();
 
 
 var originalVideo = document.getElementById('video');
@@ -18,6 +26,9 @@ videoElement.muted = true;
 videoElement.playsInline = true;
 videoElement.play();
 
+// var textureLoader = new THREE.TextureLoader();
+// var map =  textureLoader.load("assets/logo.png");
+// map.flipY = false;
 
 
 const texture = new THREE.VideoTexture(videoElement);
@@ -47,6 +58,7 @@ var renderer = new THREE.WebGLRenderer( { canvas: render_ar, alpha: true, preser
 renderer.setSize(camera_width, camera_height);
 var factor = 0.5;
 renderer.setPixelRatio(window.devicePixelRatio * factor)
+renderer.outputEncoding = THREE.sRGBEncoding;
 //document.body.appendChild(renderer.domElement);
 
 // const geometry = new THREE.BoxGeometry(10, 10, 3); // width, height, depth
@@ -74,6 +86,35 @@ scene.add(mesh);
 camera.position.x = 0;
 camera.position.y = 0;
 camera.position.z = 120;
+
+
+loader.load('assets/Anna_OBJ/trump.gltf', function ( gltf ) {
+  // const model = gltf.scene;
+  // // let mixer = new THREE.AnimationMixer( model );
+  // // gltf.animations.forEach(( clip ) => {
+  // //   mixer.clipAction(clip).play();
+  // // });
+
+  gltf.scene.scale.set( 1, 1, 1 );			   
+	// gltf.scene.position.x = 0; //Position (x = right+ left-) 
+  // gltf.scene.position.y = 0; //Position (y = up+, down-)
+	// gltf.scene.position.z = 0;
+  gltf.scene.position.set(0, 0, 0);
+  gltf.scene.visible=true;
+//   gltf.scene.material = new THREE.MeshPhongMaterial({
+//     map: map,
+//     color: 0xff00ff,
+// });
+  
+	scene.add(gltf.scene);
+  
+  console.log ('add gltf')
+
+}, undefined, function ( error ) {
+
+	console.error( error );
+
+} );
 
 
 var vec = new THREE.Vector3(); // create once and reuse

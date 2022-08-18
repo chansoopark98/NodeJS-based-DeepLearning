@@ -9,7 +9,7 @@ import { render_ar_video, switch_visible, get_world_coords } from "./three_test.
 tf.ready().then(() => {
 });
 
-const model = await tf.loadGraphModel('assets/display_detection/model.json');
+const model = await tf.loadGraphModel('assets/face_detection/model.json');
 
 
 // const warmupResult = model.predict(tf.zeros([1,300,300,3]));
@@ -33,9 +33,6 @@ var videoElement = document.getElementById('video');
 videoElement.addEventListener('canplaythrough', render_video);
 console.log(videoElement.videoWidth, videoElement.videoHeight);
 
-
-// var originalVideo = document.getElementById('video');
-// originalVideo.addEventListener('canplaythrough', render_ar_video);
 
 videoElement.width = 720;
 videoElement.height = 1280;

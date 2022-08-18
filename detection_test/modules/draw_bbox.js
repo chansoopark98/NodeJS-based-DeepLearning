@@ -9,7 +9,7 @@ import * as camera_util from "./camera.js";
 tf.ready().then(() => {
 });
 
-const model = await tf.loadGraphModel('assets/converted_tfjs/model.json');
+const model = await tf.loadGraphModel('assets/face_detection/model.json');
 
 
 // const warmupResult = model.predict(tf.zeros([1,300,300,3]));
