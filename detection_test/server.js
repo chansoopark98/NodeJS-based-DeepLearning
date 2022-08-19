@@ -29,7 +29,7 @@ var server = require('https').createServer(options, app);
 
 app.get('/', (req, res) => {
   
-    res.render(__dirname + "/test_page.html");    // index.ejs을 사용자에게 전달
+    res.render(__dirname + "/face_pose_main_page.html");    // index.ejs을 사용자에게 전달
 })
 
 server.listen(server_port, function() {

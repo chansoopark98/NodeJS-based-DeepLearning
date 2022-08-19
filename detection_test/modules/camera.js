@@ -75,8 +75,10 @@
  function openCamera(baseVideo, deviceId) {
      return new Promise((reserve, reject) => {
          let video = {
-             width: 640,
-             height: 480
+             minWidth: 1920,
+             minHeight: 1080,
+             width: 1920,
+             height: 1080
          }
      
          if (deviceId == "ios") {

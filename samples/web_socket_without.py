@@ -4,10 +4,14 @@ import websockets
 import cv2
 import numpy as np
 import base64
-from threading import Thread
-import json
-import requests
-import aiohttp
+import mediapipe as mp
+
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp_face_mesh.FaceMesh(max_num_faces=1,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5)
+mp_drawing = mp.solutions.drawing_utils
+drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
 
 
 class TCPServer():
@@ -18,61 +22,111 @@ class TCPServer():
         self.cert_dir = cert_dir
         self.key_dir = key_dir
 
-        self.tcp_address = 'http://localhost:8501/v1/models/test_model:predict'
+        self.width = 1920
+        self.height = 1080
+        self.focal_length = 1 * self.width
+        self.cam_matrix = np.array([[self.focal_length, 0, self.height/2],
+                                    [0, self.focal_length, self.width/2],
+                                    [0, 0, 1]])
+        self.cam_matrix = np.array(self.cam_matrix)
+        self.dist_matrix = np.zeros((4, 1), dtype=np.float64)
 
-    def rcv_data(self, data):
-        data = data[0].split(',')
-        client_id = data[0]
-        data_type = data[1]
-        base64_data = data[2]
+    def rcv_data(self, data, websocket):
 
-        if len(base64_data) % 4:
-            # 4의 배수가 아니면 패딩
-            base64_data += '=' * (4 - len(base64_data) % 4)
+        # print(data)
 
+        base64_data = data[0]
+        
+        # if len(base64_data) % 4:
+        #     # 4의 배수가 아니면 패딩
+        #     print('padding')
+        #     base64_data += '=' * (4 - len(base64_data) % 4)
+        
         imgdata = base64.b64decode(base64_data)
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
+
+
+
+        
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = cv2.resize(image, (180, 320))
-        send_image = np.expand_dims(image, axis=0)
+        image.flags.writeable = False
+        results = face_mesh.process(image)
+        image.flags.writeable = True
 
-        send_image = json.dumps({'instances':send_image[0:3].tolist()})
-        
-        result = requests.post(self.tcp_address, data=send_image)
+        face_2d = []
+        face_3d = []
+        output = []
+        idx = 0
+        if results.multi_face_landmarks:
+            for face_landmarks in results.multi_face_landmarks:
+                idx += 1
+                for idx, lm in enumerate(face_landmarks.landmark):
+                    # if idx == 33 or idx == 263 or idx == 1 or idx == 61 or idx == 291 or idx == 199:
+                        if idx == 1:
+                            center_x = int(lm.x * self.width)
+                            center_y = int(lm.y * self.height)
+                        x = int(lm.x * self.width)
+                        y = int(lm.y * self.height)
 
-        predictions = json.loads(str(result.content, 'utf-8'))['predictions']
 
-        prediction = np.array(predictions[0])
-        prediction = np.reshape(prediction, (320, 180, 2))
-        prediction = np.argmax(prediction, axis=-1)
-        prediction = prediction * 127
+                        face_2d.append([x,y])
+                        face_3d.append([x, y, lm.z])
+    
+        
+        # for i in range(0, 18, 3):
+        #     x = float(data[i])
+        #     y = float(data[i+1])
+        #     z = float(data[i+2])
 
-        cv2.imshow(str(client_id), image)
-        cv2.waitKey(1)
         
-        encode_image = cv2.imencode('.jpeg', prediction)
-        encode_image = base64.b64encode(encode_image[1]).decode('utf-8')
-        encode_image = 'data:image/jpeg;base64' + ',' + encode_image
+
+
+
+                face_2d = np.array(face_2d, dtype=np.float64)
+                face_3d = np.array(face_3d, dtype=np.float64)
+
+                success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, self.cam_matrix, self.dist_matrix)
+
+                rmat, jac = cv2.Rodrigues(rot_vec)
+
+                angle, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
+
+
+                # print(angle)
+            # center_x = str(center_x) + ','
+            # center_y = str(center_y) + ','
+            center_x = str(960) + ','
+            center_y = str(400) + ','
+            x_rot = str(angle[0] ) + ','
+            y_rot = str(round(angle[1], 3)) + ','
+            z_rot = str(angle[2]) + ','
+            
+            print(round(angle[1], 3))
+            output = center_x + center_y +x_rot + y_rot + z_rot
+
+            
+        
+        return output
         
         
         
-        return client_id, encode_image
+        
 
     async def loop_logic(self, websocket, path):
+
+
         while True:
-            try:
-                # Wait data from client
-                data = await asyncio.gather(websocket.recv())
-                client_id, rcv_data = self.rcv_data(data=data)
-                print(client_id)
+                
+            # Wait data from client
+            data = await asyncio.gather(websocket.recv())
+            rcv_data = self.rcv_data(data=data, websocket=websocket)
+            if rcv_data != 0:
                 await websocket.send(rcv_data)
 
-            except Exception as e:
-                print('Log : {0}'.format(e))
-                cv2.destroyWindow(str(client_id))
-                break
-                # websocket.close()
+
+
+
 
     
     def run_server(self):
@@ -82,7 +136,7 @@ class TCPServer():
             self.ssl_context = None
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
-                                             max_size=80000,
+                                             max_size=200000,
                                              max_queue=1,
                                              read_limit=2**20,
                                              write_limit=2**8)
@@ -91,7 +145,7 @@ class TCPServer():
         
 
 if __name__ == "__main__":
-    use_local = True
+    use_local = False
 
     if use_local:
         hostname = '127.0.0.1'
