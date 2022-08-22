@@ -1,18 +1,20 @@
 import ssl
 import asyncio
+from tkinter.messagebox import NO
 import websockets
 import cv2
 import numpy as np
 import base64
 import mediapipe as mp
+import json
+import math
 
 mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(max_num_faces=1,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5)
+face_mesh = mp_face_mesh.FaceMesh(max_num_faces=2,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.3)
 mp_drawing = mp.solutions.drawing_utils
 drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
-
 
 class TCPServer():
     def __init__(self, hostname, port, cert_dir, key_dir):
@@ -30,85 +32,111 @@ class TCPServer():
                                     [0, 0, 1]])
         self.cam_matrix = np.array(self.cam_matrix)
         self.dist_matrix = np.zeros((4, 1), dtype=np.float64)
+        self.prev_x = 0
+        self.prev_y = 0
+        
+
 
     def rcv_data(self, data, websocket):
-
-        # print(data)
-
         base64_data = data[0]
-        
-        # if len(base64_data) % 4:
-        #     # 4의 배수가 아니면 패딩
-        #     print('padding')
-        #     base64_data += '=' * (4 - len(base64_data) % 4)
-        
         imgdata = base64.b64decode(base64_data)
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
-
-
-
         
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
         results = face_mesh.process(image)
         image.flags.writeable = True
 
-        face_2d = []
-        face_3d = []
-        output = []
-        idx = 0
+
+        send_dict = []
+        output = ''
+        
         if results.multi_face_landmarks:
-            for face_landmarks in results.multi_face_landmarks:
-                idx += 1
-                for idx, lm in enumerate(face_landmarks.landmark):
-                    # if idx == 33 or idx == 263 or idx == 1 or idx == 61 or idx == 291 or idx == 199:
+            detected_faces = results.multi_face_landmarks
+            detected_nums = len(detected_faces)
+            # for face_landmarks in results.multi_face_landmarks:
+            for face_idx in range(detected_nums):
+                face_2d = []
+                face_3d = []
+                depth = []
+                
+                
+                for idx, lm in enumerate(detected_faces[face_idx].landmark):
+                    if idx == 33 or idx == 263 or idx == 1 or idx == 61 or idx == 291 or idx == 199:
                         if idx == 1:
                             center_x = int(lm.x * self.width)
                             center_y = int(lm.y * self.height)
+
+                            
+                            if abs(self.prev_x - center_x) > 20:
+                                self.prev_x = center_x
+                            else:
+                                center_x = self.prev_x
+
+                            if abs(self.prev_y - center_y) > 20:
+                                self.prev_y = center_y
+                            else:
+                                center_y = self.prev_y
+                            
+                            print(center_x, center_y)
+                            # if abs(center_x - self.prev_x) > 10:
+                            #     print('x  ', abs(center_x - self.prev_x))    
+                            #     tmp_x = center_x
+                            #     center_x = self.prev_x
+                            #     self.prev_x = tmp_x
+ 
+                                
+                                
+                            depth.append(lm.z)
+                            
+
+
                         x = int(lm.x * self.width)
                         y = int(lm.y * self.height)
 
-
+                        
                         face_2d.append([x,y])
                         face_3d.append([x, y, lm.z])
-    
-        
-        # for i in range(0, 18, 3):
-        #     x = float(data[i])
-        #     y = float(data[i+1])
-        #     z = float(data[i+2])
-
-        
-
 
 
                 face_2d = np.array(face_2d, dtype=np.float64)
                 face_3d = np.array(face_3d, dtype=np.float64)
-
+                depth = np.array(depth, dtype=np.float64)
+                depth = np.mean(depth)
+                
                 success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, self.cam_matrix, self.dist_matrix)
 
                 rmat, jac = cv2.Rodrigues(rot_vec)
 
                 angle, mtxR, mtxQ, Qx, Qy, Qz = cv2.RQDecomp3x3(rmat)
 
+                face_idx = str(face_idx) + ','
+                center_x = str(center_x) + ','
+                center_y = str(center_y) + ','
+                x_rot = str(round(angle[0], 3)) + ','
+                y_rot = str(round(angle[1], 3)) + ','
+                z_rot = str(angle[2]) + ','
+                depth = str(-round(depth, 5)) + ','
+                
+                face_results = face_idx + center_x + center_y + x_rot + y_rot + z_rot + depth
+                
+                output += face_results
 
-                # print(angle)
-            # center_x = str(center_x) + ','
-            # center_y = str(center_y) + ','
-            center_x = str(960) + ','
-            center_y = str(400) + ','
-            x_rot = str(angle[0] ) + ','
-            y_rot = str(round(angle[1], 3)) + ','
-            z_rot = str(angle[2]) + ','
-            
-            print(round(angle[1], 3))
-            output = center_x + center_y +x_rot + y_rot + z_rot
-
-            
-        
+        else:
+            face_idx = str(0) + ','
+            center_x = str(0) + ','
+            center_y = str(0) + ','
+            x_rot = str(0) + ','
+            y_rot = str(0) + ','
+            z_rot = str(0) + ','
+            depth = str(0) + ','
+                
+            face_results = face_idx + center_x + center_y + x_rot + y_rot + z_rot + depth
+                
+            output += face_results
+                
         return output
-        
         
         
         
@@ -121,14 +149,11 @@ class TCPServer():
             # Wait data from client
             data = await asyncio.gather(websocket.recv())
             rcv_data = self.rcv_data(data=data, websocket=websocket)
-            if rcv_data != 0:
+            if rcv_data != '':
+                rcv_data = rcv_data[:-1]
                 await websocket.send(rcv_data)
 
 
-
-
-
-    
     def run_server(self):
         self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.ssl_context.load_cert_chain(self.cert_dir, self.key_dir)

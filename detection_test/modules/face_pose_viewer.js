@@ -1,10 +1,10 @@
-tf.ENV.set("WEBGL_CPU_FORWARD", true)
-tf.setBackend('webgl');
-// tf.setBackend('wasm');
-console.log(tf.getBackend()); // tf backend 확인
+// tf.ENV.set("WEBGL_CPU_FORWARD", true)
+// tf.setBackend('webgl');
+// // tf.setBackend('wasm');
+// console.log(tf.getBackend()); // tf backend 확인
 
 import * as camera_util from "./camera.js";
-import { render_ar_video, switch_visible, get_world_coords, get_world_rotate } from "./face_pose_ar.js";
+import { render_ar_video, switch_visible, get_world_coords, get_world_rotate, visibleHandler} from "./face_pose_ar.js";
 
 var webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
 
@@ -15,6 +15,17 @@ const canvas = document.getElementById("render_area");
 canvas.width=1920;
 canvas.height=1080;
 
+var target_loop = 0;
+var idx;
+var face_idx;
+var center_x;
+var center_y;
+var x_rot;
+var y_rot;
+var z_rot;
+var depth;
+
+var visibleFlag= false;
 
 
 let context = canvas.getContext('2d');
@@ -48,22 +59,41 @@ webSocket.interval = setInterval(() => { // ?초마다 클라이언트로 메시
 }, 50);
 
 webSocket.onmessage = function(message){
+    visibleFlag = true;
     var recv_data = message.data.split(',');
-    var center_x = parseFloat(recv_data[0]);
-    var center_y = parseFloat(recv_data[1]);
-    var x_rot = parseFloat(recv_data[2]);
-    var y_rot = parseFloat(recv_data[3]);
-    var z_rot = parseFloat(recv_data[4]);
-    console.log(center_x, center_y)
-    get_world_coords(center_x, center_y);
-    get_world_rotate(x_rot, y_rot, z_rot);
     
-    // get_world_coords
-    // console.log(recv_data);
+
+    target_loop = recv_data.length/7
+    
+    for (let i=1; i<=target_loop; i++){
+
+        idx = i * 7;
+        face_idx = parseInt(recv_data[idx-7]);
+        
+        center_x = parseFloat(recv_data[idx-6]);
+        center_y = parseFloat(recv_data[idx-5]);
+        x_rot = parseFloat(recv_data[idx-4]);
+        y_rot = parseFloat(recv_data[idx-3]);
+        z_rot = parseFloat(recv_data[idx-2]);
+        depth = parseFloat(recv_data[idx-1]);
+        
+        if (center_x != 0.0) {
+            visibleHandler(i-1, true);
+        }
+        else{
+            visibleHandler(i-1, false);
+        }
+        
+        
+        get_world_coords(i-1, center_x, center_y, depth);
+        get_world_rotate(i-1, x_rot, y_rot, z_rot);
+    }
+
 }
 
 async function render_video(){
-    console.log('draw image');
+    
+    
     context.drawImage(videoElement, 0, 0, 1920, 1080);
 
     await requestAnimationFrame(render_video);
