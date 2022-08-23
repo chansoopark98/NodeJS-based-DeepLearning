@@ -29,28 +29,30 @@ var renderer = new THREE.WebGLRenderer({
 });
 renderer.setSize(camera_width, camera_height);
 
-renderer.setPixelRatio(window.devicePixelRatio * factor)
-renderer.outputEncoding = THREE.sRGBEncoding;
+// renderer.setPixelRatio(window.devicePixelRatio * factor)
+// renderer.outputEncoding = THREE.sRGBEncoding;
 
 var pointLight = new THREE.PointLight(0xffffff);
-pointLight.position.set(100, 300, 200);
+pointLight.position.set(0, 300, 200);
 scene.add(pointLight);
 
 camera.position.x = 0;
 camera.position.y = 0;
 camera.position.z = 10;
 
-var test_models = [];
+var modelLists = [];
 
-loader.load('assets/Anna_OBJ/trump.gltf', function ( gltf ) {
-    gltf.scene.scale.set(1, 1, 1 );			   
+loader.load('assets/Anna_OBJ/head.gltf', function ( gltf ) {
+    gltf.scene.scale.set(3.2, 3.2, 3.2);			   
     gltf.scene.position.set(0, 0, 0);
-    gltf.scene.visible=false;
+    gltf.scene.visible=true;
 
     
     model = gltf.scene;
-    test_models.push(model);
+    console.log(model)
+    modelLists.push(model);
     scene.add(gltf.scene);
+    console.log('model load clear');
 
 }, undefined, function ( error ) {
 	console.error( error );
@@ -63,7 +65,7 @@ loader.load('assets/Anna_OBJ/trump.gltf', function ( gltf ) {
     gltf.scene.visible = false;
 
     secondModel = gltf.scene;
-    test_models.push(secondModel);
+    modelLists.push(secondModel);
     scene.add(secondModel);
 
 }, undefined, function ( error ) {
@@ -73,24 +75,34 @@ loader.load('assets/Anna_OBJ/trump.gltf', function ( gltf ) {
 
 
 
-var vec = new THREE.Vector3(); // create once and reuse
 
-function visibleHandler(idx, bool){
-    test_models[idx].visible = bool;
+
+function visibleHandler(Idx, bool){
+    modelLists[Idx].visible = bool;
 }
 
 
-function get_world_coords(idx, center_x, center_y, depth){
+function changeRotationAndPosition(idx, scale, center_x, center_y, depth, x_rot, y_rot, z_rot){
     
+    // var depthFactor = 0.027
+    var objectScaleFactor = (scale / 250);
+    console.log(objectScaleFactor);
     
-    center_x = center_x - (250 * model.rotation.y);
+    model.scale.x = 3.2 * objectScaleFactor;
+    model.scale.y = 3.2 * objectScaleFactor;
+    model.scale.z = 3.2 * objectScaleFactor;
+
+
+    center_x = center_x - (center_x * (y_rot * 10));
+
+    center_y = center_y + 150;
     
-    center_y = center_y + 170;
     var pos = new THREE.Vector3(); // create once and reuse
+    var vec = new THREE.Vector3(); // create once and reuse
     vec.set(
         (( center_x / camera_width ) * 2 - 1).toFixed(4),
         (- ( center_y / camera_height ) * 2 + 1).toFixed(4),
-        0.5 );
+        10- (depth * 10) ); // 0.5
 
     vec.unproject(camera);
     
@@ -101,35 +113,24 @@ function get_world_coords(idx, center_x, center_y, depth){
     var value = vec.multiplyScalar( distance.toFixed(4) );
   
     if (idx == 0) {
-        model.position.z = -depth.toFixed(3);
+        // model.position.z = -depth.toFixed(3);
         model.position.x = (pos.x + value.x).toFixed(3);
         model.position.y = (pos.y + value.y).toFixed(3);
-        console.log(center_x, center_y);
-        console.log(model.position);
+
+        model.rotation.x = (-x_rot * 15).toFixed(2);
+        model.rotation.y = (y_rot * 30).toFixed(2);
+        
+        
     }
     else{
         secondModel.position.x = (pos.x + value.x);
         secondModel.position.y = (pos.y + value.y);
-    }
-    
-    
-}
-
-
-function get_world_rotate(idx, x_rot, y_rot, z_rot){  
-
-    if (idx == 0) {
-        model.rotation.x = (-x_rot * 15).toFixed(2);
-        model.rotation.y = (y_rot * 30).toFixed(2);
-
-        // console.log(model.rotation);
-    }
-    else{
         secondModel.rotation.x = -x_rot * 15;
         secondModel.rotation.y = y_rot * 30;
     }
     
-  }
+    
+}
 
 function switch_visible(visible_flag){
   mesh.visible = visible_flag;
@@ -137,7 +138,8 @@ function switch_visible(visible_flag){
 
 async function render_ar_video(){
   renderer.render(scene, camera);
-  await requestAnimationFrame(render_ar_video);
+//   await requestAnimationFrame(render_ar_video);
+  setTimeout(render_ar_video, 1)
 }
 
-export {render_ar_video, switch_visible, get_world_coords, get_world_rotate, visibleHandler};
+export {render_ar_video, switch_visible, visibleHandler, changeRotationAndPosition};

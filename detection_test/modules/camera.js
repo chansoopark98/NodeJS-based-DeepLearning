@@ -34,10 +34,14 @@
                          audio: false,
                          video: {
                              deviceId: deviceId
-                         }
+                         },
+                         zoom: true
                      };
      
                      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                     const supports = navigator.mediaDevices.getSupportedConstraints();
+                     
+                     
                      stream.getVideoTracks().forEach(track => {
                          const capabilities = track.getCapabilities();
      
@@ -96,6 +100,7 @@
          navigator.mediaDevices.getUserMedia(constraints).then(stream => {
              stream.getVideoTracks().forEach(track => {
                  //console.log(track);
+                 console.log(stream.getVideoTracks());
                  console.log(track.getSettings());
              });
              

@@ -9,7 +9,7 @@ IMAGE_FILES = []
 drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
 with mp_face_mesh.FaceMesh(
     static_image_mode=True,
-    max_num_faces=2,
+    max_num_faces=3,
     refine_landmarks=True,
     min_detection_confidence=0.5) as face_mesh:
   for idx, file in enumerate(IMAGE_FILES):
@@ -48,9 +48,9 @@ with mp_face_mesh.FaceMesh(
 
 # For webcam input:
 drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 with mp_face_mesh.FaceMesh(
-    max_num_faces=1,
+    max_num_faces=3,
     refine_landmarks=True,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5) as face_mesh:
