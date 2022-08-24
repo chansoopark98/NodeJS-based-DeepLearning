@@ -10,8 +10,8 @@ import * as THREE from '../build/three.module.js'
 var model; // GLTF 모델
 var secondModel;
 var factor = 1.0; // 비디오 퀄리티 팩터 (0 ~ 1)
-var camera_width = 1920; // 렌더링할 캔버스 너비
-var camera_height = 1080; // 렌더링할 캔버스 높이
+var camera_width = 2560; // 렌더링할 캔버스 너비
+var camera_height = 1440; // 렌더링할 캔버스 높이
 
 // Configurate GLTF loader
 const loader = new GLTFLoader();

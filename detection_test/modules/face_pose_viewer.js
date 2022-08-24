@@ -9,8 +9,8 @@ const webSocket = new WebSocket("wss://park-tdl.tspxr.ml:7777");
 
 // 이미지를 저장하기 위한 canvas 생성
 const canvas = document.getElementById("render_area");
-canvas.width=1920;
-canvas.height=1080;
+canvas.width=2560;
+canvas.height=1440;
 
 let maxObjNums = 2;
 let targetLoop = 0;
@@ -100,7 +100,9 @@ webSocket.onmessage = function(message){
 async function render_video(){
     
     
-    context.drawImage(videoElement, 0, 0, 1920, 1080);
+    // context.drawImage(videoElement, 0, 0, 1920, 1080);
+    context.drawImage(videoElement, 0, 0, 2560, 1440);
+    // context.drawImage(videoElement, 300, 300, 400, 400, 0, 0, 400, 400);
 
     await requestAnimationFrame(render_video);
 }

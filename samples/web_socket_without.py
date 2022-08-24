@@ -24,8 +24,8 @@ class TCPServer():
         self.cert_dir = cert_dir
         self.key_dir = key_dir
 
-        self.width = 1920
-        self.height = 1080
+        self.width = 2560
+        self.height = 1440
         self.focal_length = 1 * self.width
         self.cam_matrix = np.array([[self.focal_length, 0, self.height/2],
                                     [0, self.focal_length, self.width/2],
@@ -44,6 +44,8 @@ class TCPServer():
         image = np.frombuffer(imgdata, np.uint8)
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
         
+        cv2.imshow('test', image)
+        cv2.waitKey(1)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
         results = face_mesh.process(image)
@@ -64,7 +66,7 @@ class TCPServer():
                 test_x = 0
                 test_y = 0
 
-                h, w = 1080, 1920
+                h, w = self.height, self.width
                 cx_min=  w
                 cy_min = h
                 cx_max= cy_max = 0
@@ -183,9 +185,9 @@ class TCPServer():
             self.ssl_context = None
         self.start_server = websockets.serve(self.loop_logic,
                                              port=self.port, ssl=self.ssl_context,
-                                             max_size=200000,
+                                             max_size=400000,
                                              max_queue=1,
-                                             read_limit=2**20,
+                                             read_limit=2**22,
                                              write_limit=2**8)
         asyncio.get_event_loop().run_until_complete(self.start_server)
         asyncio.get_event_loop().run_forever()
