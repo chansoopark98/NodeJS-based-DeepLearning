@@ -7,9 +7,17 @@ app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 
 
+// app.use('/styles', express.static(__dirname + '/styles'));
+// app.use('/modules', express.static(__dirname + '/modules'));
+// app.use('/build', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/three/build'));
+
+
+app.use('/assets', express.static(__dirname + '/assets'));
 app.use('/styles', express.static(__dirname + '/styles'));
 app.use('/modules', express.static(__dirname + '/modules'));
 app.use('/build', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/three/build'));
+app.use('/gltf', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/three/'));
+app.use('/tfjs', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/@tensorflow/'));
 
 var server = http.createServer(app);
 

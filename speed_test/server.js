@@ -19,7 +19,7 @@ app.use('/styles', express.static(__dirname + '/styles'));
 app.use('/modules', express.static(__dirname + '/modules'));
 app.use('/build', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/three/build'));
 app.use('/gltf', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/three/'));
-app.use('/tfjs', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/@tensorflow/tfjs'));
+app.use('/tfjs', express.static('/home/park/park/NodeJS-based-DeepLearning/node_modules/@tensorflow/'));
 var server_port = 5555;
 var server = require('https').createServer(options, app);
 
